@@ -1,0 +1,330 @@
+import { create } from 'zustand';
+import { db } from '../lib/firebase';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  orderBy
+} from 'firebase/firestore';
+
+export interface TrackerEntry {
+  id: string;
+  userId: string;
+  type: 'workout' | 'sleep' | 'reading' | 'sexuality' | 'posture' | 'habits' | 'diet' | 'meditation' | 'journal' | 'affective' | 'career' | 'community';
+  date: string;
+  value: any;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Plan {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  duration: number; // days
+  pillars: string[];
+  objectives: string[];
+  dailyTasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    type: string;
+    duration: number;
+    completed: boolean;
+    date: string;
+  }>;
+  status: 'active' | 'completed' | 'paused';
+  startDate: string;
+  endDate: string;
+  progress: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TrackerStore {
+  trackers: TrackerEntry[];
+  plans: Plan[];
+  currentPlan: Plan | null;
+  loading: boolean;
+
+  loadTrackers: (userId: string, startDate?: string, endDate?: string) => Promise<void>;
+  loadPlans: (userId: string) => Promise<void>;
+  createTracker: (data: Omit<TrackerEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateTracker: (id: string, data: Partial<TrackerEntry>) => Promise<void>;
+  deleteTracker: (id: string) => Promise<void>;
+  createPlan: (userId: string, planData: any) => Promise<Plan>;
+  updatePlanProgress: (planId: string, progress: number) => Promise<void>;
+  getStreak: (userId: string, type: string) => Promise<number>;
+  saveTrackerValue: (userId: string, date: string, type: string, value: any) => Promise<void>;
+  exportTrackers: (userId: string, format: 'csv' | 'json') => Promise<string>;
+}
+
+export const useTrackerStore = create<TrackerStore>((set, get) => ({
+  trackers: [],
+  plans: [],
+  currentPlan: null,
+  loading: false,
+
+  loadTrackers: async (userId: string, startDate?: string, endDate?: string) => {
+    try {
+      set({ loading: true });
+      const trackersRef = collection(db, 'trackers');
+      let q = query(trackersRef, where('userId', '==', userId));
+
+      if (startDate) q = query(q, where('date', '>=', startDate));
+      if (endDate) q = query(q, where('date', '<=', endDate));
+
+      const querySnapshot = await getDocs(q);
+      const trackers: TrackerEntry[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        trackers.push({
+          id: doc.id,
+          userId: data.userId,
+          type: data.type,
+          date: data.date,
+          value: data.value,
+          metadata: data.metadata || {},
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as TrackerEntry);
+      });
+
+      set({ trackers, loading: false });
+    } catch (error) {
+      console.error('Load trackers error:', error);
+      set({ loading: false });
+    }
+  },
+
+  loadPlans: async (userId: string) => {
+    try {
+      const plansRef = collection(db, 'plans');
+      const q = query(plansRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+
+      const querySnapshot = await getDocs(q);
+      const plans: Plan[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        plans.push({
+          id: doc.id,
+          userId: data.userId,
+          title: data.title,
+          description: data.description,
+          duration: data.duration,
+          pillars: data.pillars || [],
+          objectives: data.objectives || [],
+          dailyTasks: data.dailyTasks || [],
+          status: data.status,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          progress: data.progress || 0,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as Plan);
+      });
+
+      const currentPlan = plans.find(p => p.status === 'active') || null;
+      set({ plans, currentPlan });
+    } catch (error) {
+      console.error('Load plans error:', error);
+    }
+  },
+
+  createTracker: async (data: Omit<TrackerEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const now = new Date().toISOString();
+      const trackerData = {
+        ...data,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const docRef = await addDoc(collection(db, 'trackers'), trackerData);
+
+      const newTracker: TrackerEntry = {
+        id: docRef.id,
+        ...trackerData
+      } as TrackerEntry;
+
+      set(state => ({ trackers: [...state.trackers, newTracker] }));
+    } catch (error) {
+      console.error('Create tracker error:', error);
+      throw error;
+    }
+  },
+
+  updateTracker: async (id: string, data: Partial<TrackerEntry>) => {
+    try {
+      const now = new Date().toISOString();
+      const updateData = {
+        ...data,
+        updatedAt: now
+      };
+
+      const docRef = doc(db, 'trackers', id);
+      await updateDoc(docRef, updateData);
+
+      set(state => ({
+        trackers: state.trackers.map(t =>
+          t.id === id ? { ...t, ...updateData } : t
+        )
+      }));
+    } catch (error) {
+      console.error('Update tracker error:', error);
+      throw error;
+    }
+  },
+
+  deleteTracker: async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'trackers', id));
+
+      set(state => ({
+        trackers: state.trackers.filter(t => t.id !== id)
+      }));
+    } catch (error) {
+      console.error('Delete tracker error:', error);
+      throw error;
+    }
+  },
+
+  createPlan: async (userId: string, planData: any) => {
+    try {
+      const now = new Date().toISOString();
+      const newPlanData = {
+        userId,
+        ...planData,
+        status: 'active',
+        progress: 0,
+        startDate: now,
+        endDate: new Date(Date.now() + planData.duration * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const docRef = await addDoc(collection(db, 'plans'), newPlanData);
+
+      const newPlan: Plan = {
+        id: docRef.id,
+        ...newPlanData
+      } as Plan;
+
+      set(state => ({
+        plans: [newPlan, ...state.plans],
+        currentPlan: newPlan
+      }));
+
+      return newPlan;
+    } catch (error) {
+      console.error('Create plan error:', error);
+      throw error;
+    }
+  },
+
+  updatePlanProgress: async (planId: string, progress: number) => {
+    try {
+      const docRef = doc(db, 'plans', planId);
+      await updateDoc(docRef, { progress });
+
+      set(state => ({
+        plans: state.plans.map(p =>
+          p.id === planId ? { ...p, progress } : p
+        ),
+        currentPlan: state.currentPlan?.id === planId
+          ? { ...state.currentPlan, progress }
+          : state.currentPlan
+      }));
+    } catch (error) {
+      console.error('Update plan progress error:', error);
+      throw error;
+    }
+  },
+
+  getStreak: async (userId: string, type: string) => {
+    const { trackers } = get();
+    const userTrackers = trackers.filter(t => t.userId === userId && t.type === type);
+
+    if (userTrackers.length === 0) return 0;
+
+    // Sort by date descending
+    const sortedTrackers = userTrackers.sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < sortedTrackers.length; i++) {
+      const trackerDate = new Date(sortedTrackers[i].date);
+      trackerDate.setHours(0, 0, 0, 0);
+
+      const expectedDate = new Date(today);
+      expectedDate.setDate(expectedDate.getDate() - i);
+
+      if (trackerDate.getTime() === expectedDate.getTime()) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  },
+
+  saveTrackerValue: async (userId: string, date: string, type: string, value: any) => {
+    try {
+      const { trackers, updateTracker, createTracker } = get();
+      const existingTracker = trackers.find(t =>
+        t.userId === userId &&
+        t.date === date &&
+        t.type === type
+      );
+
+      if (existingTracker) {
+        await updateTracker(existingTracker.id, { value });
+      } else {
+        await createTracker({
+          userId,
+          type: type as any,
+          date,
+          value,
+          metadata: {}
+        });
+      }
+    } catch (error) {
+      console.error('Save tracker value error:', error);
+      throw error;
+    }
+  },
+
+  exportTrackers: async (userId: string, format: 'csv' | 'json') => {
+    const { trackers } = get();
+    const userTrackers = trackers.filter(t => t.userId === userId);
+
+    if (format === 'json') {
+      return JSON.stringify(userTrackers, null, 2);
+    } else {
+      // CSV format
+      const headers = ['Date', 'Type', 'Value', 'Created At'];
+      const rows = userTrackers.map(t => [
+        t.date,
+        t.type,
+        JSON.stringify(t.value),
+        t.createdAt
+      ]);
+
+      return [headers, ...rows].map(row => row.join(',')).join('\n');
+    }
+  }
+}));
