@@ -1,21 +1,77 @@
 import { WorkoutPlan } from './ai';
 
-// Mapeamento de IDs de vídeos do DeltaBolic (Exemplos para demonstração)
-// Para um sistema completo, seria ideal preencher isso com os IDs reais de todos os exercícios
+// Mapa de tradução para melhorar a busca no canal DeltaBolic (que é em inglês)
+export const EXERCISE_TRANSLATIONS: Record<string, string> = {
+    "Supino Reto": "Flat Bench Press",
+    "Supino Reto com Halteres": "Dumbbell Bench Press",
+    "Supino Reto Máquina": "Machine Chest Press",
+    "Supino Inclinado": "Incline Bench Press",
+    "Supino Inclinado com Halteres": "Incline Dumbbell Press",
+    "Crucifixo": "Chest Fly",
+    "Crucifixo na Polia": "Cable Fly",
+    "Crucifixo Reto": "Dumbbell Fly",
+    "Crossover Polia Alta": "High Cable Crossover",
+    "Flexão de Braço": "Push Up",
+    
+    "Puxada Alta": "Lat Pulldown",
+    "Puxada Alta Frente": "Lat Pulldown",
+    "Puxada Triângulo": "V-Bar Lat Pulldown",
+    "Remada Curvada": "Barbell Bent Over Row",
+    "Remada Curvada Pegada Supinada": "Reverse Grip Bent Over Row",
+    "Remada Unilateral (Serrote)": "One Arm Dumbbell Row",
+    "Pulldown": "Straight Arm Pulldown",
+    "Barra Fixa": "Pull Up",
+    "Graviton": "Assisted Pull Up",
+    "Hiperextensão Lombar": "Back Extension",
+    
+    "Desenvolvimento Militar": "Overhead Press",
+    "Desenvolvimento com Halteres": "Dumbbell Shoulder Press",
+    "Desenvolvimento Máquina": "Machine Shoulder Press",
+    "Elevação Lateral": "Lateral Raise",
+    "Elevação Frontal": "Front Raise",
+    "Elevação Frontal Corda": "Cable Front Raise",
+    "Crucifixo Inverso": "Reverse Pec Deck",
+    "Face Pull": "Face Pull",
+    "Encolhimento com Halteres": "Dumbbell Shrug",
+    
+    "Rosca Direta": "Barbell Curl",
+    "Rosca Direta Halteres": "Dumbbell Curl",
+    "Rosca Direta Barra W": "EZ Bar Curl",
+    "Rosca Martelo": "Hammer Curl",
+    "Rosca Scott": "Preacher Curl",
+    
+    "Tríceps Corda": "Tricep Rope Pushdown",
+    "Tríceps Pulley": "Tricep Pushdown",
+    "Tríceps Testa": "Skullcrushers",
+    
+    "Agachamento Livre": "Barbell Squat",
+    "Agachamento Goblet": "Goblet Squat",
+    "Leg Press": "Leg Press",
+    "Leg Press 45": "Leg Press",
+    "Cadeira Extensora": "Leg Extension",
+    "Mesa Flexora": "Leg Curl",
+    "Afundo com Halteres": "Dumbbell Lunges",
+    "Levantamento Terra": "Deadlift",
+    "Stiff": "Stiff Leg Deadlift",
+    "Stiff com Halteres": "Dumbbell Stiff Leg Deadlift",
+    "Panturrilha Sentado": "Seated Calf Raise",
+    "Panturrilha em Pé": "Standing Calf Raise",
+    
+    "Abdominal Supra": "Crunch",
+    "Prancha Abdominal": "Plank"
+};
+
+// IDs específicos para carregamento instantâneo (Otimização)
 export const DELTABOLIC_VIDEO_MAP: Record<string, string> = {
-    "Supino Reto com Halteres": "VmB1G1K7v94", // Exemplo (ID real precisaria ser buscado)
+    "Supino Reto com Halteres": "VmB1G1K7v94",
     "Supino Inclinado com Halteres": "0G2_Hj5qj8E",
-    "Crucifixo": "eozdVDA78K0",
     "Elevação Lateral": "3VcKaXpzqRo",
     "Tríceps Corda": "6yHuuyj-Ex0",
     "Puxada Alta": "CAwf7n6Luuc",
     "Remada Curvada": "G8x-_ac_keo",
     "Agachamento Livre": "UltWZb7TIx8",
     "Leg Press": "IZxyjW7MPJQ",
-    "Cadeira Extensora": "YyvSfVjQeL0",
-    "Stiff": "1Tq3QdYUuHs",
     "Rosca Direta": "i1xrPS-lEkI",
-    "Rosca Martelo": "zC3nLlEpq4w",
     "Desenvolvimento Militar": "QAQ64hK4Xxs"
 };
 
@@ -32,7 +88,7 @@ export const WORKOUT_DATABASE: Record<string, Record<string, WorkoutPlan>> = {
                 {
                     dayName: "Treino A - Superiores",
                     exercises: [
-                        { name: "Supino Reto Máquina ou Halteres", sets: 3, reps: "12-15", rest: "60s" },
+                        { name: "Supino Reto Máquina", sets: 3, reps: "12-15", rest: "60s" },
                         { name: "Puxada Alta Frente", sets: 3, reps: "12-15", rest: "60s" },
                         { name: "Desenvolvimento Máquina", sets: 3, reps: "12-15", rest: "60s" },
                         { name: "Rosca Direta Halteres", sets: 3, reps: "12-15", rest: "60s" },
@@ -63,7 +119,7 @@ export const WORKOUT_DATABASE: Record<string, Record<string, WorkoutPlan>> = {
                 {
                     dayName: "Dia 1 - Full Body A",
                     exercises: [
-                        { name: "Agachamento Livre (ou Goblet)", sets: 3, reps: "12", rest: "90s" },
+                        { name: "Agachamento Livre", sets: 3, reps: "12", rest: "90s" },
                         { name: "Supino Reto", sets: 3, reps: "12", rest: "60s" },
                         { name: "Remada Curvada", sets: 3, reps: "12", rest: "60s" },
                         { name: "Desenvolvimento Militar", sets: 2, reps: "12", rest: "60s" }
@@ -81,7 +137,7 @@ export const WORKOUT_DATABASE: Record<string, Record<string, WorkoutPlan>> = {
                 {
                     dayName: "Dia 3 - Full Body C",
                     exercises: [
-                        { name: "Levantamento Terra (ou Stiff)", sets: 3, reps: "10", rest: "90s" },
+                        { name: "Levantamento Terra", sets: 3, reps: "10", rest: "90s" },
                         { name: "Supino Inclinado", sets: 3, reps: "12", rest: "60s" },
                         { name: "Rosca Direta", sets: 2, reps: "15", rest: "45s" },
                         { name: "Tríceps Corda", sets: 2, reps: "15", rest: "45s" }
@@ -162,7 +218,7 @@ export const WORKOUT_DATABASE: Record<string, Record<string, WorkoutPlan>> = {
                 {
                     dayName: "B - Costas",
                     exercises: [
-                        { name: "Barra Fixa (ou Graviton)", sets: 4, reps: "Falha", rest: "90s" },
+                        { name: "Barra Fixa", sets: 4, reps: "Falha", rest: "90s" },
                         { name: "Remada Curvada Pegada Supinada", sets: 4, reps: "8-10", rest: "90s" },
                         { name: "Remada Unilateral (Serrote)", sets: 3, reps: "10-12", rest: "60s" },
                         { name: "Puxada Triângulo", sets: 3, reps: "12", rest: "60s" },
@@ -204,13 +260,11 @@ export const WORKOUT_DATABASE: Record<string, Record<string, WorkoutPlan>> = {
 };
 
 export const getPredefinedWorkout = (level: string, days: string): WorkoutPlan | null => {
-    // Fallback logic to find the closest match if exact match doesn't exist
     const levelData = WORKOUT_DATABASE[level];
     if (!levelData) return null;
 
     if (levelData[days]) return levelData[days];
 
-    // If requested days not found, return the closest one
     const availableDays = Object.keys(levelData);
     if (availableDays.length > 0) {
         return levelData[availableDays[0]];

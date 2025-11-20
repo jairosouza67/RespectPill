@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DELTABOLIC_VIDEO_MAP } from '../../lib/workouts';
-import { ArrowLeft, X, ExternalLink, Youtube } from 'lucide-react';
+import { DELTABOLIC_VIDEO_MAP, EXERCISE_TRANSLATIONS } from '../../lib/workouts';
+import { ArrowLeft, X, Youtube } from 'lucide-react';
 
 interface Exercise {
     name: string;
@@ -13,18 +13,24 @@ interface Exercise {
 export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onClose: () => void }) => {
     const [videoId, setVideoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        // Check if we have a hardcoded ID for this exercise in our DeltaBolic map
+        // 1. Tenta encontrar ID direto
         const id = DELTABOLIC_VIDEO_MAP[exercise.name];
+        
         if (id) {
             setVideoId(id);
+        } else {
+            // 2. Se não achar ID, prepara a busca
+            // Traduz o nome se possível, senão usa o original
+            const englishName = EXERCISE_TRANSLATIONS[exercise.name] || exercise.name;
+            // Remove termos genéricos que podem atrapalhar a busca no canal específico
+            const cleanName = englishName.replace('Máquina', '').replace('Halteres', 'Dumbbell').trim();
+            setSearchQuery(`DeltaBolic ${cleanName}`);
         }
         setLoading(false);
     }, [exercise.name]);
-
-    // Construct the specific search URL for DeltaBolic Shorts
-    const searchUrl = `https://www.youtube.com/results?search_query=DeltaBolic+${encodeURIComponent(exercise.name)}+shorts`;
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-lg p-4 animate-fade-in">
@@ -64,24 +70,16 @@ export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onCl
                             className="w-full h-full"
                         ></iframe>
                     ) : (
-                        <div className="text-center p-8 max-w-md">
-                             <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-600/20">
-                                <Youtube className="w-8 h-8 text-white fill-current" />
-                             </div>
-                             <h4 className="text-white font-bold text-lg mb-2">Execução Técnica</h4>
-                             <p className="text-zinc-400 mb-6 text-sm leading-relaxed">
-                                Para garantir a execução perfeita deste exercício, acesse o tutorial oficial no canal DeltaBolic.
-                             </p>
-                             <a 
-                                href={searchUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors rounded-lg"
-                            >
-                                <span>Abrir Vídeo no YouTube</span>
-                                <ExternalLink className="w-4 h-4" />
-                             </a>
-                        </div>
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src={`https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(searchQuery)}`}
+                            title={`Busca DeltaBolic ${exercise.name}`}
+                            frameBorder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen
+                            className="w-full h-full"
+                        ></iframe>
                     )}
                 </div>
 
