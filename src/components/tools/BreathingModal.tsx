@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Play, Pause, Square } from 'lucide-react';
 
 const panicAffirmations = [
     "Isso é temporário. Vai passar.",
@@ -22,9 +23,9 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
     const [affirmation, setAffirmation] = useState(panicAffirmations[0]);
 
     const rhythms = [
-        { name: "Quadrada (Foco)", in: 4, hold: 4, out: 4, holdEmpty: 4, color: 'text-cobalt-500', circle: 'border-cobalt-500' },
-        { name: "Relaxamento (4-7-8)", in: 4, hold: 7, out: 8, holdEmpty: 0, color: 'text-emerald-500', circle: 'border-emerald-500' },
-        { name: "Coerência (Equilíbrio)", in: 5, hold: 0, out: 5, holdEmpty: 0, color: 'text-gold-500', circle: 'border-gold-500' }
+        { name: "Quadrada (Foco)", in: 4, hold: 4, out: 4, holdEmpty: 4, color: 'text-cobalt-400', circle: 'border-cobalt-500' },
+        { name: "Relaxamento (4-7-8)", in: 4, hold: 7, out: 8, holdEmpty: 0, color: 'text-emerald-400', circle: 'border-emerald-500' },
+        { name: "Coerência (Equilíbrio)", in: 5, hold: 0, out: 5, holdEmpty: 0, color: 'text-gold-400', circle: 'border-gold-500' }
     ];
 
     const currentRhythm = rhythms[rhythm];
@@ -133,20 +134,21 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
     const getCircleStyle = () => {
         const base = "w-64 h-64 rounded-full border-4 flex items-center justify-center transition-all duration-[1000ms] ease-linear relative ";
         
-        if (!isActive) return base + "scale-100 bg-black border-neutral-800";
-        if (isPaused) return base + `scale-100 bg-neutral-900 ${currentRhythm.circle} opacity-50`;
+        if (!isActive) return base + "scale-100 bg-black border-dark-700";
+        if (isPaused) return base + `scale-100 bg-dark-800 ${currentRhythm.circle} opacity-50`;
 
-        if (phase === 'inhale') return base + `scale-110 bg-neutral-800/50 ${currentRhythm.circle} shadow-[0_0_50px_rgba(255,255,255,0.1)]`;
-        if (phase === 'hold') return base + `scale-110 bg-neutral-800/50 ${currentRhythm.circle}`;
+        if (phase === 'inhale') return base + `scale-110 bg-dark-800/50 ${currentRhythm.circle} shadow-[0_0_50px_rgba(255,255,255,0.1)]`;
+        if (phase === 'hold') return base + `scale-110 bg-dark-800/50 ${currentRhythm.circle}`;
         if (phase === 'exhale') return base + `scale-90 bg-black ${currentRhythm.circle}`;
-        return base + `scale-90 bg-black border-neutral-800`;
+        return base + `scale-90 bg-black border-dark-700`;
     };
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-fade-in">
              <div className="w-full max-w-md p-6 flex flex-col items-center relative h-full md:h-auto justify-center">
                 <div className="absolute top-6 left-6 md:top-0 md:left-0 w-full flex justify-between items-center z-20">
-                    <button onClick={onClose} className="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors group px-4 py-2 bg-black/50 rounded-full border border-neutral-800">
+                    <button onClick={onClose} className="bg-transparent border border-white/10 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group px-4 py-2 rounded-full hover:bg-white/5">
+                        <ArrowLeft className="w-4 h-4" />
                         <span className="text-xs font-bold uppercase tracking-widest">Voltar</span>
                     </button>
                 </div>
@@ -158,8 +160,8 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
                             onClick={() => setRhythm(idx)}
                             className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-full border transition-all ${
                                 rhythm === idx 
-                                ? 'bg-neutral-100 text-black border-white' 
-                                : 'bg-transparent text-neutral-600 border-neutral-800 hover:border-neutral-600'
+                                ? 'bg-white text-black border-white' 
+                                : 'bg-transparent text-zinc-500 border-white/10 hover:border-white/30 hover:text-white'
                             }`}
                         >
                             {r.name.split(' ')[0]}
@@ -175,7 +177,7 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
                     <div className={getCircleStyle()}>
                         <div className="text-center z-10">
                             {!isActive ? (
-                                <div className="text-white">Iniciar</div>
+                                <div className="text-white font-medium">Iniciar</div>
                             ) : (
                                 <>
                                     <span className={`block text-4xl font-black mb-2 transition-colors ${currentRhythm.color}`}>
@@ -183,7 +185,7 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
                                         {isPaused && <span className="text-xs block mt-1 text-white">PAUSA</span>}
                                     </span>
                                     {!isPaused && (
-                                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+                                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
                                             {phase === 'inhale' && 'Inspirar'}
                                             {phase === 'hold' && 'Segurar'}
                                             {phase === 'exhale' && 'Expirar'}
@@ -201,7 +203,7 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
                         <h2 className={`text-xl md:text-2xl font-light text-white mb-1 transition-opacity ${isPaused ? 'opacity-50' : 'opacity-100'}`}>
                             "{message}"
                         </h2>
-                        <p className="text-xs text-neutral-600 uppercase tracking-widest">
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest">
                             {rhythms[rhythm].name}
                         </p>
                     </div>
@@ -217,20 +219,20 @@ export const BreathingModal = ({ onClose }: { onClose: () => void }) => {
                     <button 
                         onClick={stopSession}
                         disabled={!isActive}
-                        className={`p-4 rounded-full border transition-all ${
+                        className={`p-4 rounded-full border bg-transparent transition-all ${
                             isActive 
-                            ? 'border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-white' 
-                            : 'border-neutral-800 text-neutral-800 cursor-not-allowed'
+                            ? 'border-white/20 text-zinc-400 hover:bg-white/5 hover:text-white' 
+                            : 'border-white/5 text-zinc-700 cursor-not-allowed'
                         }`}
                     >
-                        Parar
+                        <Square className="w-5 h-5 fill-current" />
                     </button>
 
                     <button 
                         onClick={isActive ? togglePause : startCycle}
-                        className="p-6 rounded-full bg-white text-black hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                        className="p-6 rounded-full bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] border-0"
                     >
-                        {!isActive || isPaused ? "Play" : "Pause"}
+                        {!isActive || isPaused ? <Play className="w-6 h-6 ml-1 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                     </button>
                 </div>
              </div>

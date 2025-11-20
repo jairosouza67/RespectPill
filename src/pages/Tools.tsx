@@ -5,20 +5,34 @@ import { CognitiveJournalModal } from '../components/tools/CognitiveJournalModal
 import { DietGeneratorModal } from '../components/tools/DietGeneratorModal';
 import { FinancialPipeline } from '../components/tools/FinancialPipeline';
 import { RelationalAuditModal } from '../components/tools/RelationalAuditModal';
+import { Wrench, Zap, Brain, Utensils, TrendingUp, Users, ArrowRight } from 'lucide-react';
 
-const ToolCard = ({ title, desc, action, onClick }: { title: string, desc: string, action: string, onClick?: () => void }) => (
+const ToolCard = ({ title, desc, action, icon: Icon, onClick }: { title: string, desc: string, action: string, icon: any, onClick?: () => void }) => (
     <div 
         onClick={onClick}
-        className="bg-neutral-900 border border-neutral-800 p-8 hover:border-gold-600/50 transition-all duration-300 group cursor-pointer relative overflow-hidden"
+        className="bg-dark-850 border border-white/5 p-8 rounded-2xl hover:border-cobalt-500/30 transition-all duration-300 group cursor-pointer relative overflow-hidden hover:shadow-2xl hover:shadow-cobalt-500/10 hover:-translate-y-1"
     >
-        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity text-gold-600">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        {/* Icon Background Effect */}
+        <div className="absolute -top-6 -right-6 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-white transform rotate-12 group-hover:rotate-0 duration-500">
+            <Icon className="w-32 h-32" />
         </div>
-        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold-500 transition-colors">{title}</h3>
-        <p className="text-sm text-neutral-500 mb-6 h-10">{desc}</p>
-        <button className="text-xs font-bold uppercase tracking-widest text-cobalt-500 flex items-center gap-2 transition-colors">
-            {action} <span className="text-lg">→</span>
-        </button>
+        
+        <div className="relative z-10 flex flex-col h-full">
+            <div className="mb-6 p-3 bg-dark-800 w-fit rounded-xl border border-white/5 group-hover:border-cobalt-500/30 group-hover:bg-cobalt-500/10 transition-colors">
+                <Icon className="w-6 h-6 text-zinc-400 group-hover:text-cobalt-400 transition-colors" />
+            </div>
+
+            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cobalt-400 transition-colors">{title}</h3>
+            <p className="text-sm text-zinc-400 mb-8 leading-relaxed flex-grow">{desc}</p>
+            
+            <div className="flex items-center text-xs font-bold uppercase tracking-widest text-zinc-500 group-hover:text-cobalt-400 transition-colors mt-auto">
+                {action} 
+                <ArrowRight className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
+            </div>
+        </div>
+        
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-cobalt-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     </div>
 );
 
@@ -28,45 +42,58 @@ export default function Tools() {
     const closeModal = () => setActiveTool(null);
 
     return (
-        <div className="p-6 md:p-12 max-w-6xl mx-auto relative">
-             <h1 className="text-3xl font-bold text-white tracking-tight mb-2 uppercase">Arsenal</h1>
-             <p className="text-neutral-500 mb-12">Ferramentas operacionais para reforçar o Sistema 8-Core.</p>
+        <div className="space-y-8">
+             {/* Header */}
+             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">Arsenal</h1>
+                    <p className="text-zinc-400">
+                        Ferramentas táticas para reforçar o Sistema 8-Core.
+                    </p>
+                </div>
+            </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <ToolCard 
                     title="Iron Log" 
-                    desc="IA Architect: Gera periodização baseada no Protocolo 8-Core."
+                    desc="IA Architect: Gera periodização de treino baseada no seu nível e disponibilidade."
                     action="Gerar Protocolo"
+                    icon={Wrench}
                     onClick={() => setActiveTool('iron_log')}
                 />
                 <ToolCard 
                     title="Botão de Pânico" 
-                    desc="Intervenção imediata. Controle autonômico e regulação."
+                    desc="Intervenção imediata para ansiedade. Controle autonômico e regulação respiratória."
                     action="Ativar SOS"
+                    icon={Zap}
                     onClick={() => setActiveTool('panic_button')}
                 />
                 <ToolCard 
                     title="Diário Cognitivo" 
-                    desc="Templates de TCC para reenquadrar a ansiedade."
+                    desc="Reenquadre pensamentos tóxicos usando princípios do Estoicismo e TCC."
                     action="Nova Entrada"
+                    icon={Brain}
                     onClick={() => setActiveTool('cognitive_journal')}
                 />
                 <ToolCard 
                     title="Arquitetura Nutricional" 
                     desc="Crie protocolos de alimentação tática baseados em macros e custo-efetividade."
                     action="Projetar Dieta"
+                    icon={Utensils}
                     onClick={() => setActiveTool('diet_generator')}
                 />
                 <ToolCard 
                     title="Pipeline Financeiro" 
-                    desc="Rastreie fontes de renda, taxa de queima e auditoria IA."
+                    desc="Rastreie fluxo de caixa e receba auditoria de IA para cortar desperdícios."
                     action="Ver Ledger"
+                    icon={TrendingUp}
                     onClick={() => setActiveTool('financial_pipeline')}
                 />
                 <ToolCard 
                     title="Auditoria Relacional" 
-                    desc="Script de check-in quinzenal para casais."
+                    desc="Diagnóstico brutalmente honesto da dinâmica do seu relacionamento."
                     action="Iniciar Auditoria"
+                    icon={Users}
                     onClick={() => setActiveTool('relational_audit')}
                 />
              </div>
