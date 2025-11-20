@@ -56,11 +56,26 @@ export default {
           800: '#065f46',
           900: '#064e3b',
         },
+        // Cobalt - Deep Metallic Blue (Tools)
+        'cobalt': {
+          200: '#bfdbfe',
+          400: '#60a5fa',
+          500: '#3b82f6', // Using primary blue as base but naming it cobalt for the tools context
+          600: '#2563eb',
+          900: '#1e3a8a',
+        },
+        // Gold - Elite/Premium
+        'gold': {
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          900: '#78350f',
+        }
       },
       fontFamily: {
-        'sans': ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'], // Swiss Typography
-        'display': ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
-        'mono': ['Courier New', 'Courier', 'monospace'],
+        'sans': ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        'display': ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'Courier New', 'Courier', 'monospace'],
       },
       letterSpacing: {
         'tighter': '-0.05em',

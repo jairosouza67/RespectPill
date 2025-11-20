@@ -16,6 +16,7 @@ import Sexualidade from './pages/Sexualidade';
 import Disciplina from './pages/Disciplina';
 import Carreira from './pages/Carreira';
 import Desafios from './pages/Desafios';
+import Tools from './pages/Tools';
 import { Toaster } from 'sonner';
 
 // Authentication temporarily disabled - direct access to all areas
@@ -41,6 +42,7 @@ function App() {
           <Route path="challenges" element={<Desafios />} />
           <Route path="content" element={<LearningPaths />} />
           <Route path="community" element={<Community />} />
+          <Route path="tools" element={<Tools />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="settings" element={<PrivacySettings />} />
           <Route path="profile" element={<Profile />} />

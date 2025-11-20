@@ -16,7 +16,8 @@ import {
   Users,
   Menu,
   X,
-  Trophy
+  Trophy,
+  Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +31,7 @@ const areas = [
   { name: 'Disciplina e Rotina', path: '/app/disciplina', icon: Calendar, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10', hoverBg: 'hover:bg-indigo-500/20', border: 'border-indigo-500' },
   { name: 'Propósito de Vida', path: '/app/carreira', icon: Briefcase, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', hoverBg: 'hover:bg-cyan-500/20', border: 'border-cyan-500' },
   { name: 'Desafios', path: '/app/challenges', icon: Trophy, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10', hoverBg: 'hover:bg-yellow-500/20', border: 'border-yellow-500' },
+  { name: 'Arsenal', path: '/app/tools', icon: Wrench, color: 'text-cobalt-400', bgColor: 'bg-cobalt-500/10', hoverBg: 'hover:bg-cobalt-500/20', border: 'border-cobalt-500' },
   { name: 'Comunidade', path: '/app/community', icon: Users, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10', hoverBg: 'hover:bg-zinc-500/20', border: 'border-zinc-500' },
 ];
 
@@ -125,7 +127,7 @@ export default function Layout() {
                   to={area.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all border-l-4 ${isActive
-                    ? `${area.bgColor} ${area.color} ${area.border} font-semibold shadow-lg shadow-${area.color}/10`
+                    ? `${area.bgColor} ${area.color} ${area.border} font-semibold shadow-lg shadow-${area.color.split('-')[1]}/10`
                     : `text-zinc-400 hover:text-white ${area.hoverBg} border-transparent hover:border-zinc-700`
                     }`}
                 >

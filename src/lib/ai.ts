@@ -1,97 +1,75 @@
 /**
  * AI Service Module - OpenRouter Integration
- * 
- * Integração com OpenRouter para usar modelos como Grok, GPT-4, Claude 3, etc.
  */
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
 const SITE_NAME = 'Respect Pill';
 
-// Modelo padrão definido pelo usuário (Grok)
-// Verifique o ID correto no OpenRouter. Usando um genérico aqui, ajuste conforme necessário.
+// Modelo padrão (Grok ou similar via OpenRouter)
 const AI_MODEL = "x-ai/grok-beta"; 
+
+// --- Interfaces ---
 
 export interface DietPlan {
     id: string;
-    userId: string;
-    name: string;
-    description: string;
+    title: string;
+    strategy: string;
     calories: number;
-    meals: Meal[];
+    macros: {
+        protein: string;
+        carbs: string;
+        fats: string;
+    };
+    meals: {
+        name: string;
+        items: string[];
+    }[];
     createdAt: string;
-}
-
-export interface Meal {
-    name: string;
-    time: string;
-    foods: Food[];
-    calories: number;
-}
-
-export interface Food {
-    name: string;
-    quantity: string;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fats: number;
 }
 
 export interface WorkoutPlan {
     id: string;
-    userId: string;
-    name: string;
-    description: string;
-    duration: number; // in weeks
-    workouts: Workout[];
+    title: string;
+    level: string;
+    frequency: string;
+    notes: string;
+    schedule: {
+        dayName: string;
+        exercises: {
+            name: string;
+            sets: number;
+            reps: string;
+            rest: string;
+            technique?: string;
+        }[];
+    }[];
     createdAt: string;
 }
 
-export interface Workout {
-    day: string;
-    name: string;
-    exercises: Exercise[];
-    duration: number; // in minutes
+export interface FinancialAudit {
+    score: number;
+    wasteDetection: string[];
+    burnRateAnalysis: string;
+    strategy: string;
 }
 
-export interface Exercise {
-    name: string;
-    sets: number;
-    reps: string;
-    rest: number; // in seconds
-    notes?: string;
+export interface RelationalAudit {
+    healthScore: number;
+    diagnosis: string;
+    actionPlan: string[];
+    goldenClause: string;
 }
 
-export interface DailyTask {
-    id: string;
-    date: string;
-    title: string;
-    description: string;
-    pillar: string;
-    duration: number; // in minutes
-    completed: boolean;
+export interface CognitiveAnalysis {
+    distortion: string;
+    analysis: string;
+    reframe: string;
+    action: string;
 }
 
-interface Profile {
-    age?: number;
-    weight?: number;
-    height?: number;
-    activityLevel?: string;
-    goals?: string[];
-    restrictions?: string[];
-    experienceLevel?: string;
-    dailyTimePreference?: string;
-    workSchedule?: string;
-    sleepHours?: number;
-    allergies?: string[];
-    injuries?: string[];
-    priorityGoals?: string[];
-}
+// --- Core Function ---
 
-/**
- * Função genérica para chamar a API do OpenRouter
- */
 async function callOpenRouter(systemPrompt: string, userPrompt: string): Promise<any> {
     if (!OPENROUTER_API_KEY) {
         console.warn("VITE_OPENROUTER_API_KEY não encontrada. Usando mock fallback.");
@@ -113,13 +91,12 @@ async function callOpenRouter(systemPrompt: string, userPrompt: string): Promise
                     { "role": "system", "content": systemPrompt },
                     { "role": "user", "content": userPrompt }
                 ],
-                "response_format": { "type": "json_object" } // Força resposta JSON se o modelo suportar
+                "response_format": { "type": "json_object" }
             })
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`OpenRouter API Error: ${errorData.error?.message || response.statusText}`);
+            throw new Error(`OpenRouter API Error: ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -138,181 +115,124 @@ async function callOpenRouter(systemPrompt: string, userPrompt: string): Promise
     }
 }
 
-/**
- * Generate a personalized diet plan based on user profile
- */
-export async function generateDietPlan(profile: Profile): Promise<DietPlan> {
+// --- Tool Functions ---
+
+export async function generateDietPlan(weight: string, height: string, goal: string, meals: string, preferences: string): Promise<DietPlan | null> {
     const systemPrompt = `
-    Você é um nutricionista esportivo de elite.
-    Gere um plano de dieta completo em formato JSON estrito.
-    O JSON deve seguir exatamente esta estrutura:
+    Você é um nutricionista esportivo de elite focado em alta performance.
+    Gere um plano de dieta em JSON estrito com a seguinte estrutura:
     {
-        "name": "string",
-        "description": "string",
+        "title": "Nome do Protocolo (ex: Protocolo Metabólico Agressivo)",
+        "strategy": "Resumo da estratégia em 1 frase",
         "calories": number,
+        "macros": { "protein": "Xg", "carbs": "Xg", "fats": "Xg" },
         "meals": [
-            {
-                "name": "string",
-                "time": "string (HH:MM)",
-                "calories": number,
-                "foods": [
-                    { "name": "string", "quantity": "string", "calories": number, "protein": number, "carbs": number, "fats": number }
-                ]
-            }
+            { "name": "Nome da Refeição", "items": ["item 1", "item 2"] }
         ]
     }
-    Não inclua markdown, apenas o JSON cru.
     `;
-
-    const userPrompt = `
-    Crie uma dieta para um homem com o seguinte perfil:
-    Idade: ${profile.age}
-    Peso: ${profile.weight}kg
-    Altura: ${profile.height}cm
-    Nível de Atividade: ${profile.activityLevel}
-    Objetivos: ${profile.goals?.join(', ')}
-    Restrições: ${profile.restrictions?.join(', ')}
-    Alergias: ${profile.allergies?.join(', ')}
-    `;
+    const userPrompt = `Perfil: ${weight}kg, ${height}cm. Objetivo: ${goal}. Refeições/dia: ${meals}. Preferências: ${preferences}`;
 
     try {
-        const aiData = await callOpenRouter(systemPrompt, userPrompt);
-        
-        return {
-            id: `diet-${Date.now()}`,
-            userId: '',
-            createdAt: new Date().toISOString(),
-            ...aiData
-        };
-    } catch (error) {
-        console.log("Fallback to mock diet due to error");
-        // Fallback simples se a API falhar ou não estiver configurada
-        return {
-            id: `diet-mock-${Date.now()}`,
-            userId: '',
-            name: 'Plano Exemplo (API Indisponível)',
-            description: 'Configure a API Key para gerar planos reais.',
-            calories: 2000,
-            meals: [],
-            createdAt: new Date().toISOString()
-        };
+        const data = await callOpenRouter(systemPrompt, userPrompt);
+        return { id: Date.now().toString(), createdAt: new Date().toISOString(), ...data };
+    } catch (e) {
+        return null;
     }
 }
 
-/**
- * Generate a personalized workout plan based on user profile
- */
-export async function generateWorkoutPlan(profile: Profile): Promise<WorkoutPlan> {
+export async function generateWorkoutPlan(level: string, days: string): Promise<WorkoutPlan | null> {
     const systemPrompt = `
-    Você é um treinador de força e condicionamento de elite.
-    Gere um plano de treino semanal em formato JSON estrito.
-    O JSON deve seguir exatamente esta estrutura:
+    Você é um treinador de força de elite. Crie um treino periodizado em JSON estrito:
     {
-        "name": "string",
-        "description": "string",
-        "duration": number (semanas),
-        "workouts": [
+        "title": "Nome do Treino (ex: Protocolo Híbrido 8-Core)",
+        "level": "${level}",
+        "frequency": "${days}x/semana",
+        "notes": "Dica tática curta",
+        "schedule": [
             {
-                "day": "string (ex: Segunda)",
-                "name": "string",
-                "duration": number (minutos),
+                "dayName": "Dia X - Foco",
                 "exercises": [
-                    { "name": "string", "sets": number, "reps": "string", "rest": number (segundos), "notes": "string" }
+                    { "name": "Nome", "sets": number, "reps": "string", "rest": "string", "technique": "string (opcional)" }
                 ]
             }
         ]
     }
-    Não inclua markdown, apenas o JSON cru.
     `;
-
-    const userPrompt = `
-    Crie um treino para um homem com o seguinte perfil:
-    Nível de Experiência: ${profile.experienceLevel}
-    Objetivos: ${profile.goals?.join(', ')}
-    Lesões: ${profile.injuries?.join(', ')}
-    Tempo Disponível: ${profile.dailyTimePreference} minutos
-    `;
+    const userPrompt = `Nível: ${level}. Frequência: ${days} dias por semana. Foco: Hipertrofia e Força Funcional.`;
 
     try {
-        const aiData = await callOpenRouter(systemPrompt, userPrompt);
-        
-        return {
-            id: `workout-${Date.now()}`,
-            userId: '',
-            createdAt: new Date().toISOString(),
-            ...aiData
-        };
-    } catch (error) {
-        console.log("Fallback to mock workout due to error");
-        return {
-            id: `workout-mock-${Date.now()}`,
-            userId: '',
-            name: 'Treino Exemplo (API Indisponível)',
-            description: 'Configure a API Key para gerar treinos reais.',
-            duration: 4,
-            workouts: [],
-            createdAt: new Date().toISOString()
-        };
+        const data = await callOpenRouter(systemPrompt, userPrompt);
+        return { id: Date.now().toString(), createdAt: new Date().toISOString(), ...data };
+    } catch (e) {
+        return null;
     }
 }
 
-/**
- * Generate a 90-day personalized protocol with daily tasks
- */
-export async function generate90DayPlan(profile: Profile): Promise<DailyTask[]> {
-    // Para o plano de 90 dias, gerar tudo de uma vez pode estourar o limite de tokens.
-    // Vamos gerar um padrão semanal e replicar, ou pedir apenas a estrutura base.
-    // Por enquanto, vamos manter uma lógica híbrida ou pedir apenas a primeira semana e replicar logicamente.
-    
+export async function generateFinancialAudit(transactions: any[], goal: string): Promise<FinancialAudit | null> {
     const systemPrompt = `
-    Você é um estrategista de desenvolvimento pessoal masculino.
-    Crie uma rotina diária ideal baseada nos pilares: Corpo, Mente e Disciplina.
-    Retorne um JSON com uma lista de 5 tarefas diárias padrão que devem ser repetidas.
-    Estrutura JSON:
+    Você é um CFO implacável. Analise as finanças e retorne JSON estrito:
     {
-        "tasks": [
-            { "title": "string", "description": "string", "pillar": "corpo|mente|disciplina", "duration": number }
-        ]
+        "score": number (0-100),
+        "wasteDetection": ["item 1", "item 2"],
+        "burnRateAnalysis": "Análise curta e direta sobre o fluxo de caixa",
+        "strategy": "Uma ação tática imediata para atingir o objetivo"
     }
     `;
-
-    const userPrompt = `
-    Perfil:
-    Objetivos: ${profile.priorityGoals?.join(', ')}
-    Horário de Trabalho: ${profile.workSchedule}
-    Tempo Disponível: ${profile.dailyTimePreference} minutos
-    `;
+    const userPrompt = `Transações: ${JSON.stringify(transactions)}. Objetivo: ${goal}`;
 
     try {
-        const aiData = await callOpenRouter(systemPrompt, userPrompt);
-        const baseTasks = aiData.tasks;
-        
-        const tasks: DailyTask[] = [];
-        const startDate = new Date();
-
-        // Generate tasks for 90 days based on the AI pattern
-        for (let day = 0; day < 90; day++) {
-            const date = new Date(startDate);
-            date.setDate(date.getDate() + day);
-            const dateStr = date.toISOString().split('T')[0];
-
-            baseTasks.forEach((task: any, index: number) => {
-                tasks.push({
-                    id: `task-${day}-${index}`,
-                    date: dateStr,
-                    title: task.title,
-                    description: task.description,
-                    pillar: task.pillar,
-                    duration: task.duration,
-                    completed: false
-                });
-            });
-        }
-
-        return tasks;
-
-    } catch (error) {
-        console.log("Fallback to mock plan due to error");
-        return [];
+        return await callOpenRouter(systemPrompt, userPrompt);
+    } catch (e) {
+        return null;
     }
+}
+
+export async function generateRelationshipAudit(comm: number, intimacy: number, vision: number, friction: string, gratitude: string): Promise<RelationalAudit | null> {
+    const systemPrompt = `
+    Você é um terapeuta de casais focado em dinâmica evolutiva. Retorne JSON estrito:
+    {
+        "healthScore": number (0-100),
+        "diagnosis": "Análise brutalmente honesta da dinâmica",
+        "actionPlan": ["Passo 1", "Passo 2", "Passo 3"],
+        "goldenClause": "Uma regra inegociável para os próximos 15 dias"
+    }
+    `;
+    const userPrompt = `Comunicação: ${comm}/10, Intimidade: ${intimacy}/10, Visão: ${vision}/10. Atrito: ${friction}. Gratidão: ${gratitude}`;
+
+    try {
+        return await callOpenRouter(systemPrompt, userPrompt);
+    } catch (e) {
+        return null;
+    }
+}
+
+export async function analyzeThought(situation: string, thought: string): Promise<CognitiveAnalysis | null> {
+    const systemPrompt = `
+    Você é um especialista em TCC e Estoicismo. Analise o pensamento, identifique distorções e reestruture. JSON estrito:
+    {
+        "distortion": "Nome da distorção cognitiva (ex: Catastrofização)",
+        "analysis": "Explicação lógica do erro",
+        "reframe": "A verdade estoica/objetiva sobre a situação",
+        "action": "Uma ação física imediata para quebrar o padrão"
+    }
+    `;
+    const userPrompt = `Situação: ${situation}. Pensamento Automático: ${thought}`;
+
+    try {
+        return await callOpenRouter(systemPrompt, userPrompt);
+    } catch (e) {
+        return null;
+    }
+}
+
+export async function findExerciseVideo(exerciseName: string): Promise<string | null> {
+    // Mock implementation since we don't have YouTube API key
+    // Returning null triggers the manual search fallback in the UI, which is safer/better UX than a broken video
+    return null;
+}
+
+// Placeholder for legacy function support if needed
+export async function generate90DayPlan(profile: any) {
+    return [];
 }
