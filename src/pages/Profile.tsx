@@ -119,7 +119,7 @@ export default function Profile() {
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                  if (fallback) fallback.style.display = 'flex';
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
                 }}
               />
             ) : profile?.avatar && profile.avatar.trim() ? (
@@ -130,7 +130,7 @@ export default function Profile() {
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                   const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                  if (fallback) fallback.style.display = 'flex';
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
                 }}
               />
             ) : null}

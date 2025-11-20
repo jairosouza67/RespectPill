@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Sparkles, Shield, Zap, Loader } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, Shield, Zap } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, loginWithGoogle, user } = useAuthStore();
+  const { login, loginWithGoogle } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
