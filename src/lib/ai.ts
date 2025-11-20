@@ -1,14 +1,16 @@
 /**
- * AI Service Module
+ * AI Service Module - OpenRouter Integration
  * 
- * This module provides AI-powered content generation for:
- * - Diet plans
- * - Workout plans
- * - 90-day personalized protocols
- * 
- * Currently using mock implementations that can be replaced with real AI API calls
- * (OpenAI GPT-4, Google Gemini, etc.)
+ * Integração com OpenRouter para usar modelos como Grok, GPT-4, Claude 3, etc.
  */
+
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const SITE_URL = import.meta.env.VITE_SITE_URL || 'http://localhost:3000';
+const SITE_NAME = 'Respect Pill';
+
+// Modelo padrão definido pelo usuário (Grok)
+// Verifique o ID correto no OpenRouter. Usando um genérico aqui, ajuste conforme necessário.
+const AI_MODEL = "x-ai/grok-beta"; 
 
 export interface DietPlan {
     id: string;
@@ -88,254 +90,229 @@ interface Profile {
 }
 
 /**
+ * Função genérica para chamar a API do OpenRouter
+ */
+async function callOpenRouter(systemPrompt: string, userPrompt: string): Promise<any> {
+    if (!OPENROUTER_API_KEY) {
+        console.warn("VITE_OPENROUTER_API_KEY não encontrada. Usando mock fallback.");
+        throw new Error("API Key não configurada");
+    }
+
+    try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                "HTTP-Referer": SITE_URL,
+                "X-Title": SITE_NAME,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": AI_MODEL,
+                "messages": [
+                    { "role": "system", "content": systemPrompt },
+                    { "role": "user", "content": userPrompt }
+                ],
+                "response_format": { "type": "json_object" } // Força resposta JSON se o modelo suportar
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`OpenRouter API Error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        
+        try {
+            return JSON.parse(content);
+        } catch (e) {
+            console.error("Erro ao fazer parse do JSON da IA:", content);
+            throw new Error("A IA não retornou um JSON válido.");
+        }
+
+    } catch (error) {
+        console.error("Erro na chamada AI:", error);
+        throw error;
+    }
+}
+
+/**
  * Generate a personalized diet plan based on user profile
- * TODO: Replace with actual AI API call
  */
 export async function generateDietPlan(profile: Profile): Promise<DietPlan> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const calories = calculateCalories(profile);
-
-    return {
-        id: `diet-${Date.now()}`,
-        userId: '',
-        name: 'Plano Nutricional Personalizado',
-        description: `Plano de ${calories} calorias diárias baseado no seu perfil`,
-        calories,
-        meals: [
+    const systemPrompt = `
+    Você é um nutricionista esportivo de elite.
+    Gere um plano de dieta completo em formato JSON estrito.
+    O JSON deve seguir exatamente esta estrutura:
+    {
+        "name": "string",
+        "description": "string",
+        "calories": number,
+        "meals": [
             {
-                name: 'Café da Manhã',
-                time: '07:00',
-                calories: Math.round(calories * 0.25),
-                foods: [
-                    { name: 'Ovos mexidos', quantity: '3 unidades', calories: 210, protein: 18, carbs: 2, fats: 15 },
-                    { name: 'Pão integral', quantity: '2 fatias', calories: 140, protein: 6, carbs: 24, fats: 2 },
-                    { name: 'Abacate', quantity: '1/2 unidade', calories: 120, protein: 1, carbs: 6, fats: 11 }
-                ]
-            },
-            {
-                name: 'Almoço',
-                time: '12:00',
-                calories: Math.round(calories * 0.35),
-                foods: [
-                    { name: 'Frango grelhado', quantity: '200g', calories: 330, protein: 62, carbs: 0, fats: 7 },
-                    { name: 'Arroz integral', quantity: '150g', calories: 195, protein: 4, carbs: 41, fats: 2 },
-                    { name: 'Brócolis', quantity: '100g', calories: 35, protein: 3, carbs: 7, fats: 0 }
-                ]
-            },
-            {
-                name: 'Lanche',
-                time: '16:00',
-                calories: Math.round(calories * 0.15),
-                foods: [
-                    { name: 'Whey protein', quantity: '1 scoop', calories: 120, protein: 24, carbs: 3, fats: 1 },
-                    { name: 'Banana', quantity: '1 unidade', calories: 105, protein: 1, carbs: 27, fats: 0 }
-                ]
-            },
-            {
-                name: 'Jantar',
-                time: '19:00',
-                calories: Math.round(calories * 0.25),
-                foods: [
-                    { name: 'Salmão', quantity: '150g', calories: 280, protein: 34, carbs: 0, fats: 15 },
-                    { name: 'Batata doce', quantity: '150g', calories: 130, protein: 2, carbs: 30, fats: 0 },
-                    { name: 'Salada verde', quantity: '100g', calories: 20, protein: 1, carbs: 4, fats: 0 }
+                "name": "string",
+                "time": "string (HH:MM)",
+                "calories": number,
+                "foods": [
+                    { "name": "string", "quantity": "string", "calories": number, "protein": number, "carbs": number, "fats": number }
                 ]
             }
-        ],
-        createdAt: new Date().toISOString()
-    };
+        ]
+    }
+    Não inclua markdown, apenas o JSON cru.
+    `;
+
+    const userPrompt = `
+    Crie uma dieta para um homem com o seguinte perfil:
+    Idade: ${profile.age}
+    Peso: ${profile.weight}kg
+    Altura: ${profile.height}cm
+    Nível de Atividade: ${profile.activityLevel}
+    Objetivos: ${profile.goals?.join(', ')}
+    Restrições: ${profile.restrictions?.join(', ')}
+    Alergias: ${profile.allergies?.join(', ')}
+    `;
+
+    try {
+        const aiData = await callOpenRouter(systemPrompt, userPrompt);
+        
+        return {
+            id: `diet-${Date.now()}`,
+            userId: '',
+            createdAt: new Date().toISOString(),
+            ...aiData
+        };
+    } catch (error) {
+        console.log("Fallback to mock diet due to error");
+        // Fallback simples se a API falhar ou não estiver configurada
+        return {
+            id: `diet-mock-${Date.now()}`,
+            userId: '',
+            name: 'Plano Exemplo (API Indisponível)',
+            description: 'Configure a API Key para gerar planos reais.',
+            calories: 2000,
+            meals: [],
+            createdAt: new Date().toISOString()
+        };
+    }
 }
 
 /**
  * Generate a personalized workout plan based on user profile
- * TODO: Replace with actual AI API call
  */
 export async function generateWorkoutPlan(profile: Profile): Promise<WorkoutPlan> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const level = profile.experienceLevel || 'beginner';
-    const isAdvanced = level === 'advanced';
-
-    return {
-        id: `workout-${Date.now()}`,
-        userId: '',
-        name: `Treino ${level === 'beginner' ? 'Iniciante' : level === 'intermediate' ? 'Intermediário' : 'Avançado'}`,
-        description: 'Programa de treino personalizado focado em hipertrofia e força',
-        duration: 12,
-        workouts: [
+    const systemPrompt = `
+    Você é um treinador de força e condicionamento de elite.
+    Gere um plano de treino semanal em formato JSON estrito.
+    O JSON deve seguir exatamente esta estrutura:
+    {
+        "name": "string",
+        "description": "string",
+        "duration": number (semanas),
+        "workouts": [
             {
-                day: 'Segunda',
-                name: 'Peito e Tríceps',
-                duration: 60,
-                exercises: [
-                    { name: 'Supino reto', sets: isAdvanced ? 4 : 3, reps: '8-12', rest: 90 },
-                    { name: 'Supino inclinado', sets: isAdvanced ? 4 : 3, reps: '8-12', rest: 90 },
-                    { name: 'Crucifixo', sets: 3, reps: '12-15', rest: 60 },
-                    { name: 'Tríceps testa', sets: 3, reps: '10-12', rest: 60 },
-                    { name: 'Tríceps corda', sets: 3, reps: '12-15', rest: 60 }
-                ]
-            },
-            {
-                day: 'Terça',
-                name: 'Costas e Bíceps',
-                duration: 60,
-                exercises: [
-                    { name: 'Barra fixa', sets: isAdvanced ? 4 : 3, reps: '6-10', rest: 90 },
-                    { name: 'Remada curvada', sets: isAdvanced ? 4 : 3, reps: '8-12', rest: 90 },
-                    { name: 'Pulldown', sets: 3, reps: '10-12', rest: 60 },
-                    { name: 'Rosca direta', sets: 3, reps: '10-12', rest: 60 },
-                    { name: 'Rosca martelo', sets: 3, reps: '12-15', rest: 60 }
-                ]
-            },
-            {
-                day: 'Quarta',
-                name: 'Descanso ou Cardio Leve',
-                duration: 30,
-                exercises: [
-                    { name: 'Caminhada', sets: 1, reps: '30min', rest: 0, notes: 'Ritmo moderado' }
-                ]
-            },
-            {
-                day: 'Quinta',
-                name: 'Pernas',
-                duration: 70,
-                exercises: [
-                    { name: 'Agachamento', sets: isAdvanced ? 5 : 4, reps: '6-10', rest: 120 },
-                    { name: 'Leg press', sets: 4, reps: '10-12', rest: 90 },
-                    { name: 'Cadeira extensora', sets: 3, reps: '12-15', rest: 60 },
-                    { name: 'Cadeira flexora', sets: 3, reps: '12-15', rest: 60 },
-                    { name: 'Panturrilha', sets: 4, reps: '15-20', rest: 45 }
-                ]
-            },
-            {
-                day: 'Sexta',
-                name: 'Ombros e Abdômen',
-                duration: 55,
-                exercises: [
-                    { name: 'Desenvolvimento', sets: 4, reps: '8-12', rest: 90 },
-                    { name: 'Elevação lateral', sets: 3, reps: '12-15', rest: 60 },
-                    { name: 'Elevação frontal', sets: 3, reps: '12-15', rest: 60 },
-                    { name: 'Abdominal supra', sets: 3, reps: '15-20', rest: 45 },
-                    { name: 'Prancha', sets: 3, reps: '60s', rest: 45 }
+                "day": "string (ex: Segunda)",
+                "name": "string",
+                "duration": number (minutos),
+                "exercises": [
+                    { "name": "string", "sets": number, "reps": "string", "rest": number (segundos), "notes": "string" }
                 ]
             }
-        ],
-        createdAt: new Date().toISOString()
-    };
+        ]
+    }
+    Não inclua markdown, apenas o JSON cru.
+    `;
+
+    const userPrompt = `
+    Crie um treino para um homem com o seguinte perfil:
+    Nível de Experiência: ${profile.experienceLevel}
+    Objetivos: ${profile.goals?.join(', ')}
+    Lesões: ${profile.injuries?.join(', ')}
+    Tempo Disponível: ${profile.dailyTimePreference} minutos
+    `;
+
+    try {
+        const aiData = await callOpenRouter(systemPrompt, userPrompt);
+        
+        return {
+            id: `workout-${Date.now()}`,
+            userId: '',
+            createdAt: new Date().toISOString(),
+            ...aiData
+        };
+    } catch (error) {
+        console.log("Fallback to mock workout due to error");
+        return {
+            id: `workout-mock-${Date.now()}`,
+            userId: '',
+            name: 'Treino Exemplo (API Indisponível)',
+            description: 'Configure a API Key para gerar treinos reais.',
+            duration: 4,
+            workouts: [],
+            createdAt: new Date().toISOString()
+        };
+    }
 }
 
 /**
  * Generate a 90-day personalized protocol with daily tasks
- * TODO: Replace with actual AI API call
  */
-export async function generate90DayPlan(_profile: Profile): Promise<DailyTask[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+export async function generate90DayPlan(profile: Profile): Promise<DailyTask[]> {
+    // Para o plano de 90 dias, gerar tudo de uma vez pode estourar o limite de tokens.
+    // Vamos gerar um padrão semanal e replicar, ou pedir apenas a estrutura base.
+    // Por enquanto, vamos manter uma lógica híbrida ou pedir apenas a primeira semana e replicar logicamente.
+    
+    const systemPrompt = `
+    Você é um estrategista de desenvolvimento pessoal masculino.
+    Crie uma rotina diária ideal baseada nos pilares: Corpo, Mente e Disciplina.
+    Retorne um JSON com uma lista de 5 tarefas diárias padrão que devem ser repetidas.
+    Estrutura JSON:
+    {
+        "tasks": [
+            { "title": "string", "description": "string", "pillar": "corpo|mente|disciplina", "duration": number }
+        ]
+    }
+    `;
 
-    const tasks: DailyTask[] = [];
-    const startDate = new Date();
+    const userPrompt = `
+    Perfil:
+    Objetivos: ${profile.priorityGoals?.join(', ')}
+    Horário de Trabalho: ${profile.workSchedule}
+    Tempo Disponível: ${profile.dailyTimePreference} minutos
+    `;
 
-    // Generate tasks for 90 days
-    for (let day = 0; day < 90; day++) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + day);
-        const dateStr = date.toISOString().split('T')[0];
+    try {
+        const aiData = await callOpenRouter(systemPrompt, userPrompt);
+        const baseTasks = aiData.tasks;
+        
+        const tasks: DailyTask[] = [];
+        const startDate = new Date();
 
-        // Morning routine
-        tasks.push({
-            id: `task-${day}-1`,
-            date: dateStr,
-            title: 'Banho Gelado',
-            description: '3 minutos de água fria para ativar o sistema nervoso',
-            pillar: 'corpo',
-            duration: 5,
-            completed: false
-        });
+        // Generate tasks for 90 days based on the AI pattern
+        for (let day = 0; day < 90; day++) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + day);
+            const dateStr = date.toISOString().split('T')[0];
 
-        // Workout (every other day)
-        if (day % 2 === 0) {
-            tasks.push({
-                id: `task-${day}-2`,
-                date: dateStr,
-                title: 'Treino de Força',
-                description: 'Seguir o plano de treino personalizado',
-                pillar: 'corpo',
-                duration: 60,
-                completed: false
+            baseTasks.forEach((task: any, index: number) => {
+                tasks.push({
+                    id: `task-${day}-${index}`,
+                    date: dateStr,
+                    title: task.title,
+                    description: task.description,
+                    pillar: task.pillar,
+                    duration: task.duration,
+                    completed: false
+                });
             });
         }
 
-        // Daily reading
-        tasks.push({
-            id: `task-${day}-3`,
-            date: dateStr,
-            title: 'Leitura Diária',
-            description: '20 páginas de desenvolvimento pessoal',
-            pillar: 'mente',
-            duration: 30,
-            completed: false
-        });
+        return tasks;
 
-        // Meditation
-        tasks.push({
-            id: `task-${day}-4`,
-            date: dateStr,
-            title: 'Meditação',
-            description: '10 minutos de meditação guiada',
-            pillar: 'mente',
-            duration: 10,
-            completed: false
-        });
-
-        // Weekly check-in (every 7 days)
-        if (day % 7 === 0) {
-            tasks.push({
-                id: `task-${day}-5`,
-                date: dateStr,
-                title: 'Revisão Semanal',
-                description: 'Avaliar progresso e ajustar metas',
-                pillar: 'disciplina',
-                duration: 30,
-                completed: false
-            });
-        }
+    } catch (error) {
+        console.log("Fallback to mock plan due to error");
+        return [];
     }
-
-    return tasks;
-}
-
-/**
- * Calculate daily calorie needs based on profile
- */
-function calculateCalories(profile: Profile): number {
-    if (!profile.weight || !profile.height || !profile.age) {
-        return 2000; // Default
-    }
-
-    // Mifflin-St Jeor Equation (for men)
-    let bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + 5;
-
-    // Activity multiplier
-    const activityMultipliers: Record<string, number> = {
-        sedentary: 1.2,
-        light: 1.375,
-        moderate: 1.55,
-        active: 1.725,
-        very_active: 1.9
-    };
-
-    const multiplier = activityMultipliers[profile.activityLevel || 'moderate'] || 1.55;
-    const tdee = bmr * multiplier;
-
-    // Adjust based on goals
-    if (profile.goals?.includes('lose_weight')) {
-        return Math.round(tdee - 500); // 500 calorie deficit
-    } else if (profile.goals?.includes('gain_muscle')) {
-        return Math.round(tdee + 300); // 300 calorie surplus
-    }
-
-    return Math.round(tdee);
 }

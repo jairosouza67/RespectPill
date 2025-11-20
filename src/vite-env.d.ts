@@ -1,4 +1,3 @@
-```
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
@@ -10,9 +9,10 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string
   readonly VITE_STRIPE_PUBLISHABLE_KEY: string
   readonly VITE_ENABLE_GUEST_MODE?: string
+  readonly VITE_OPENROUTER_API_KEY?: string
+  readonly VITE_SITE_URL?: string
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
-```
