@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DELTABOLIC_VIDEO_MAP, EXERCISE_TRANSLATIONS } from '../../lib/workouts';
-import { ArrowLeft, X, ExternalLink, Youtube } from 'lucide-react';
+import { ArrowLeft, X, ExternalLink, Youtube, AlertTriangle } from 'lucide-react';
 
 interface Exercise {
     name: string;
@@ -13,6 +13,8 @@ interface Exercise {
 export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onClose: () => void }) => {
     const [videoId, setVideoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [videoError, setVideoError] = useState(false);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
         // 1. Tenta encontrar ID direto
@@ -21,9 +23,12 @@ export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onCl
         if (id) {
             setVideoId(id);
         }
-        // Se não achar, videoId fica null e mostramos o fallback
         setLoading(false);
     }, [exercise.name]);
+
+    const handleIframeError = () => {
+        setVideoError(true);
+    };
 
     // Construct the specific search URL for DeltaBolic Shorts
     const englishName = EXERCISE_TRANSLATIONS[exercise.name] || exercise.name;
@@ -55,8 +60,9 @@ export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onCl
                         <div className="flex flex-col items-center gap-3">
                             <div className="w-8 h-8 border-2 border-dark-800 border-t-red-500 rounded-full animate-spin"></div>
                         </div>
-                    ) : videoId ? (
+                    ) : videoId && !videoError ? (
                         <iframe 
+                            ref={iframeRef}
                             width="100%" 
                             height="100%" 
                             src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
@@ -65,15 +71,37 @@ export const ExercisePlayer = ({ exercise, onClose }: { exercise: Exercise, onCl
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
                             className="w-full h-full"
+                            onError={handleIframeError}
+                            onLoad={() => {
+                                // Verificar se o vídeo realmente carregou após um delay
+                                setTimeout(() => {
+                                    if (iframeRef.current) {
+                                        try {
+                                            // Tentar acessar o conteúdo do iframe para verificar se carregou
+                                            const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+                                            if (!iframeDoc || iframeDoc.body.innerHTML.includes('Video unavailable')) {
+                                                setVideoError(true);
+                                            }
+                                        } catch (e) {
+                                            // Cross-origin error é esperado, mas se chegou aqui, assume que carregou
+                                        }
+                                    }
+                                }, 3000);
+                            }}
                         ></iframe>
                     ) : (
                         <div className="text-center p-8 max-w-md">
                              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-600/20">
-                                <Youtube className="w-8 h-8 text-white fill-current" />
+                                {videoError ? <AlertTriangle className="w-8 h-8 text-white" /> : <Youtube className="w-8 h-8 text-white fill-current" />}
                              </div>
-                             <h4 className="text-white font-bold text-lg mb-2">Vídeo Não Mapeado</h4>
+                             <h4 className="text-white font-bold text-lg mb-2">
+                                {videoError ? 'Erro no Vídeo' : 'Vídeo Não Mapeado'}
+                             </h4>
                              <p className="text-zinc-400 mb-6 text-sm leading-relaxed">
-                                O vídeo específico para este exercício ainda não foi indexado no sistema. Você pode buscá-lo manualmente no canal oficial.
+                                {videoError 
+                                    ? 'O vídeo não pôde ser carregado. Isso pode acontecer devido a restrições do YouTube ou vídeo removido.'
+                                    : 'O vídeo específico para este exercício ainda não foi indexado no sistema.'
+                                }
                              </p>
                              <a 
                                 href={searchUrl}
