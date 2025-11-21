@@ -85,7 +85,7 @@ export default function Dashboard() {
                 <span>Iniciar Protocolo Diário</span>
               </Link>
               <Link to="/app/content" className="px-6 py-3 rounded-lg font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors flex items-center space-x-2">
-                <span>Ver Currículo</span>
+                <span>Sua carreira</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

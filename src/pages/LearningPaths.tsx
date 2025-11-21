@@ -209,7 +209,7 @@ export default function LearningPaths() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Currículo</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Sua carreira</h1>
           <p className="text-zinc-400">
             O mapa completo para sua evolução nas 8 áreas fundamentais.
           </p>
