@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import logo from '../assets/logo.jpg';
 import { useAuthStore } from '../stores/authStore';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Sparkles, Shield, Zap } from 'lucide-react';
+import { Eye, EyeOff, Shield, Zap } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      
+
       // Wait a moment for the store to update
       setTimeout(() => {
         toast.success('Login realizado com sucesso!');
@@ -41,7 +42,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await loginWithGoogle();
-      
+
       // Wait a moment for the store to update
       setTimeout(() => {
         toast.success('Login com Google realizado com sucesso!');
@@ -67,9 +68,9 @@ export default function Login() {
         {/* Left Side - Branding */}
         <div className="hidden md:block space-y-8 animate-fade-in">
           <div className="space-y-4">
-            <div className="inline-flex items-center space-x-2 bg-primary-500/10 border border-primary-500/20 rounded-full px-4 py-2">
-              <Sparkles className="h-4 w-4 text-primary-400" />
-              <span className="text-sm text-primary-300 font-medium">360Man</span>
+            <div className="inline-flex items-center space-x-3 bg-primary-500/10 border border-primary-500/20 rounded-full px-4 py-2">
+              <img src={logo} alt="Man360 Logo" className="h-6 w-6 rounded-full" />
+              <span className="text-sm text-primary-300 font-medium">Man360</span>
             </div>
             <h1 className="text-5xl font-bold text-white leading-tight">
               Domine sua
@@ -223,10 +224,10 @@ export default function Login() {
                 disabled={isLoading}
               >
                 <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="inline-block">
-                  <path fill="#4285f4" d="M533.5 278.4c0-17.3-1.5-34-4.3-50.3H272v95.2h146.9c-6.3 34-25.1 62.8-53.6 82.2v68.3h86.5c50.6-46.6 80.7-115.2 80.7-195.4z"/>
-                  <path fill="#34a853" d="M272 544.3c72.7 0 133.7-24.1 178.2-65.5l-86.5-68.3c-24 16.1-54.6 25.6-91.7 25.6-70.5 0-130.4-47.6-151.8-111.8h-90.2v70.3C88.2 482.7 171 544.3 272 544.3z"/>
-                  <path fill="#fbbc04" d="M120.2 325.8c-11.4-34-11.4-70 0-104l-90.2-70.3C4.2 197.6 0 234.8 0 272s4.2 74.4 29.9 120.5l90.3-67.7z"/>
-                  <path fill="#ea4335" d="M272 107.1c39.5 0 75.2 13.5 103.2 40.3l77.3-77.3C417.9 29.4 347.5 0 272 0 171 0 88.2 61.6 29.9 152.6l90.2 70.3C141.6 154.7 201.5 107.1 272 107.1z"/>
+                  <path fill="#4285f4" d="M533.5 278.4c0-17.3-1.5-34-4.3-50.3H272v95.2h146.9c-6.3 34-25.1 62.8-53.6 82.2v68.3h86.5c50.6-46.6 80.7-115.2 80.7-195.4z" />
+                  <path fill="#34a853" d="M272 544.3c72.7 0 133.7-24.1 178.2-65.5l-86.5-68.3c-24 16.1-54.6 25.6-91.7 25.6-70.5 0-130.4-47.6-151.8-111.8h-90.2v70.3C88.2 482.7 171 544.3 272 544.3z" />
+                  <path fill="#fbbc04" d="M120.2 325.8c-11.4-34-11.4-70 0-104l-90.2-70.3C4.2 197.6 0 234.8 0 272s4.2 74.4 29.9 120.5l90.3-67.7z" />
+                  <path fill="#ea4335" d="M272 107.1c39.5 0 75.2 13.5 103.2 40.3l77.3-77.3C417.9 29.4 347.5 0 272 0 171 0 88.2 61.6 29.9 152.6l90.2 70.3C141.6 154.7 201.5 107.1 272 107.1z" />
                 </svg>
                 <span>Entrar com Google</span>
               </button>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import logo from '../assets/logo.jpg';
 import {
   Dumbbell,
   Brain,
@@ -112,11 +113,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-500 to-accent-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <span className="text-white font-bold text-lg sm:text-xl">R</span>
-              </div>
+              <img src={logo} alt="Man360 Logo" className="w-10 h-10 rounded-full" />
               <span className="text-xl sm:text-2xl font-bold gradient-text">
-                Respect Pill
+                Man360
               </span>
             </div>
 
@@ -207,7 +206,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-20">
             <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4 sm:mb-6">
-              Por que Respect Pill?
+              Por que Man360?
             </h2>
             <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto px-4">
               Uma abordagem moderna, científica e sem toxicidade
@@ -261,15 +260,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <span className="text-white font-bold text-lg">R</span>
+              <span className="text-white font-bold text-lg">M</span>
             </div>
-            <span className="text-xl font-bold gradient-text">Respect Pill</span>
+            <span className="text-xl font-bold gradient-text">Man360</span>
           </div>
           <p className="text-sm sm:text-base mb-4">
             Desenvolvimento masculino moderno, sem toxicidade
           </p>
           <p className="text-xs sm:text-sm">
-            © 2024 Respect Pill. Todos os direitos reservados.
+            © 2024 Man360. Todos os direitos reservados.
           </p>
         </div>
       </footer>
