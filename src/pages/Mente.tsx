@@ -385,15 +385,18 @@ export default function Mente() {
           <div className="hidden">
             {mediaSrc && (
               // @ts-ignore
-              <ReactPlayer
-                url={mediaSrc}
-                playing={isTimerRunning || isPreviewPlaying}
-                loop={loopAudio}
-                volume={volume}
-                width="0"
-                height="0"
-                style={{ display: 'none' }}
-              />
+              <div style={{ display: 'none' }}>
+                {/* @ts-ignore */}
+                <ReactPlayer
+                  url={mediaSrc}
+                  playing={isTimerRunning || isPreviewPlaying}
+                  loop={loopAudio}
+                  volume={volume}
+                  width="0"
+                  height="0"
+                  style={{ display: 'none' }}
+                />
+              </div>
             )}
           </div>
         </div>
