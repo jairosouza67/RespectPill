@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 
 import { useTrackerStore } from '../stores/trackerStore';
@@ -384,18 +384,16 @@ export default function Mente() {
           {/* ReactPlayer hidden */}
           <div className="hidden">
             {mediaSrc && (
-              // @ts-ignore
               <div style={{ display: 'none' }}>
-                {/* @ts-ignore */}
-                <ReactPlayer
-                  url={mediaSrc}
-                  playing={isTimerRunning || isPreviewPlaying}
-                  loop={loopAudio}
-                  volume={volume}
-                  width="0"
-                  height="0"
-                  style={{ display: 'none' }}
-                />
+                {React.createElement(ReactPlayer as any, {
+                  url: mediaSrc,
+                  playing: isTimerRunning || isPreviewPlaying,
+                  loop: loopAudio,
+                  volume: volume,
+                  width: "0",
+                  height: "0",
+                  style: { display: 'none' }
+                })}
               </div>
             )}
           </div>
