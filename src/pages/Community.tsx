@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs, addDoc, updateDoc, doc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { useAuthStore } from '../stores/authStore';
-import { Heart, MessageCircle, Share2, Flag, X, Users, Send } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Flag, X, Users, Send, Shield } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -274,197 +274,263 @@ export default function Community() {
     }
   };
 
+  // Calculate trending posts (mock logic: top 3 by likes)
+  const trendingPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando comunidade...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-zinc-400">Carregando comunidade...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 space-y-4 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-            <div className="p-3 bg-gray-100 rounded-lg">
-              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-br from-primary-500/20 to-accent-500/20 rounded-xl border border-white/5">
+              <Users className="h-8 w-8 text-primary-400" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Comunidade e Identidade Masculina</h1>
-              <p className="text-sm sm:text-base text-gray-600">Conecte-se com outros homens na jornada de evolução</p>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Comunidade</h1>
+              <p className="text-zinc-400">Conecte-se com outros homens na jornada de evolução</p>
             </div>
           </div>
           <button
             onClick={() => setShowCreatePost(true)}
-            className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm sm:text-base w-full sm:w-auto justify-center"
+            className="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 hover:scale-105 flex items-center justify-center space-x-2 font-medium"
           >
-            <MessageCircle className="h-4 w-4" />
-            <span>Criar post</span>
+            <MessageCircle className="h-5 w-5" />
+            <span>Criar Discussão</span>
           </button>
         </div>
+      </div>
 
-        {/* Tag Filter */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedTag('')}
-            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${selectedTag === ''
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-          >
-            Todos
-          </button>
-          {COMMUNITY_TAGS.map(tag => (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Main Feed */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Mobile Categories (visible only on small screens) */}
+          <div className="lg:hidden flex flex-wrap gap-2 pb-4 overflow-x-auto scrollbar-hide">
             <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
-              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${selectedTag === tag
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              onClick={() => setSelectedTag('')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${selectedTag === ''
+                ? 'bg-white text-dark-950 border-white'
+                : 'bg-dark-850 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white'
                 }`}
             >
-              {tag}
+              Todos
             </button>
-          ))}
-        </div>
-      </div>
+            {COMMUNITY_TAGS.map(tag => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(tag)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${selectedTag === tag
+                  ? 'bg-primary-500/20 text-primary-300 border-primary-500/50'
+                  : 'bg-dark-850 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white'
+                  }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
 
-      {/* Posts Feed */}
-      <div className="space-y-4 sm:space-y-6">
-        {posts.map(post => (
-          <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-            {/* Post Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold">
-                    {post.userName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">{post.userName}</div>
-                  <div className="text-sm text-gray-500">
-                    {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+          {posts.map(post => (
+            <div key={post.id} className="bg-dark-850 rounded-2xl border border-white/5 p-6 hover:border-white/10 transition-all group">
+              {/* Post Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-full flex items-center justify-center border border-white/5">
+                    <span className="text-zinc-300 font-semibold">
+                      {post.userName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-medium text-white">{post.userName}</div>
+                    <div className="text-sm text-zinc-500">
+                      {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleReportContent('post', post.id)}
+                    className="text-zinc-600 hover:text-red-400 transition-colors p-2"
+                    title="Reportar conteúdo"
+                  >
+                    <Flag className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleReportContent('post', post.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <Flag className="h-4 w-4" />
-                </button>
+
+              {/* Post Content */}
+              <div className="mb-5 cursor-pointer" onClick={() => {
+                setSelectedPost(post);
+                loadComments(post.id);
+              }}>
+                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary-400 transition-colors">{post.title}</h3>
+                <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed line-clamp-3">{post.content}</p>
+
+                {/* Tags */}
+                {post.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {post.tags.map(tag => (
+                      <span key={tag} className="px-2.5 py-1 bg-white/5 text-zinc-400 text-xs rounded-lg border border-white/5">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Post Actions */}
+              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <div className="flex items-center space-x-6">
+                  <button
+                    onClick={() => handleLikePost(post.id)}
+                    className={`flex items-center space-x-2 transition-colors ${post.isLiked ? 'text-red-500' : 'text-zinc-500 hover:text-red-500'
+                      }`}
+                  >
+                    <Heart className={`h-5 w-5 ${post.isLiked ? 'fill-current' : ''}`} />
+                    <span className="text-sm font-medium">{post.likes}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedPost(post);
+                      loadComments(post.id);
+                    }}
+                    className="flex items-center space-x-2 text-zinc-500 hover:text-primary-400 transition-colors"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="text-sm font-medium">{post.comments}</span>
+                  </button>
+                  <button className="flex items-center space-x-2 text-zinc-500 hover:text-white transition-colors">
+                    <Share2 className="h-5 w-5" />
+                    <span className="text-sm font-medium">Compartilhar</span>
+                  </button>
+                </div>
               </div>
             </div>
+          ))}
 
-            {/* Post Content */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{post.content}</p>
+          {posts.length === 0 && (
+            <div className="text-center py-20 bg-dark-850/50 rounded-2xl border border-white/5 border-dashed">
+              <div className="text-zinc-600 mb-4">
+                <MessageCircle className="h-16 w-16 mx-auto opacity-50" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                Nenhum post ainda
+              </h3>
+              <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                Seja o primeiro a compartilhar sua jornada, dúvidas ou vitórias com a comunidade Man360.
+              </p>
+              <button
+                onClick={() => setShowCreatePost(true)}
+                className="bg-white text-dark-950 px-6 py-2.5 rounded-lg hover:bg-zinc-200 transition-colors font-medium"
+              >
+                Criar primeiro post
+              </button>
+            </div>
+          )}
+        </div>
 
-              {/* Tags */}
-              {post.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {post.tags.map(tag => (
-                    <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+        {/* Sidebar */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* Trending Topics */}
+          <div className="bg-dark-850 rounded-2xl border border-white/5 p-6">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+              <span className="bg-primary-500/20 p-1.5 rounded-lg mr-3">
+                <Users className="h-4 w-4 text-primary-400" />
+              </span>
+              Tópicos em Alta
+            </h3>
+            <div className="space-y-4">
+              {trendingPosts.length > 0 ? (
+                trendingPosts.map((post, index) => (
+                  <div
+                    key={post.id}
+                    className="group cursor-pointer"
+                    onClick={() => {
+                      setSelectedPost(post);
+                      loadComments(post.id);
+                    }}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <span className="text-2xl font-bold text-white/10 group-hover:text-primary-500/50 transition-colors">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <h4 className="text-white font-medium group-hover:text-primary-400 transition-colors line-clamp-2 text-sm">
+                          {post.title}
+                        </h4>
+                        <div className="flex items-center space-x-3 mt-1 text-xs text-zinc-500">
+                          <span className="flex items-center">
+                            <Heart className="h-3 w-3 mr-1" /> {post.likes}
+                          </span>
+                          <span className="flex items-center">
+                            <MessageCircle className="h-3 w-3 mr-1" /> {post.comments}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-zinc-500 text-sm">Nenhum tópico em alta ainda.</p>
               )}
             </div>
+          </div>
 
-            {/* Post Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center space-x-4">
+          {/* Categories (Desktop) */}
+          <div className="hidden lg:block bg-dark-850 rounded-2xl border border-white/5 p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Categorias</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => setSelectedTag('')}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${selectedTag === ''
+                  ? 'bg-white text-dark-950'
+                  : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                  }`}
+              >
+                <span>Todos</span>
+                {selectedTag === '' && <div className="w-2 h-2 rounded-full bg-dark-950" />}
+              </button>
+              {COMMUNITY_TAGS.map(tag => (
                 <button
-                  onClick={() => handleLikePost(post.id)}
-                  className={`flex items-center space-x-2 transition-colors ${post.isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                  key={tag}
+                  onClick={() => setSelectedTag(tag)}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${selectedTag === tag
+                    ? 'bg-primary-500/20 text-primary-300 border border-primary-500/20'
+                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                     }`}
                 >
-                  <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
-                  <span className="text-sm">{post.likes}</span>
+                  <span>{tag}</span>
+                  {selectedTag === tag && <div className="w-2 h-2 rounded-full bg-primary-400" />}
                 </button>
-                <button
-                  onClick={() => {
-                    setSelectedPost(post);
-                    loadComments(post.id);
-                  }}
-                  className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="text-sm">{post.comments}</span>
-                </button>
-                <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
-                  <Share2 className="h-4 w-4" />
-                  <span className="text-sm">Compartilhar</span>
-                </button>
-              </div>
+              ))}
             </div>
           </div>
-        ))}
 
-        {posts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <MessageCircle className="h-16 w-16 mx-auto" />
+          {/* Community Rules */}
+          <div className="bg-primary-500/5 rounded-2xl border border-primary-500/10 p-6">
+            <h4 className="text-sm font-bold text-primary-400 uppercase tracking-wide mb-4 flex items-center">
+              <Shield className="h-4 w-4 mr-2" />
+              Regras
+            </h4>
+            <div className="space-y-3">
+              {COMMUNITY_RULES.map((rule, index) => (
+                <div key={index} className="flex items-start space-x-2 text-zinc-400 text-xs leading-relaxed">
+                  <span className="text-primary-500/50 mt-0.5">•</span>
+                  <span>{rule}</span>
+                </div>
+              ))}
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum post ainda
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Seja o primeiro a compartilhar sua jornada!
-            </p>
-            <button
-              onClick={() => setShowCreatePost(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Criar primeiro post
-            </button>
           </div>
-        )}
-      </div>
-
-      {/* Create Post Modal */}
-      {showCreatePost && (
-        <CreatePostModal
-          onClose={() => setShowCreatePost(false)}
-          onSubmit={handleCreatePost}
-        />
-      )}
-
-      {/* Post Detail Modal */}
-      {selectedPost && (
-        <PostDetailModal
-          post={selectedPost}
-          comments={comments}
-          newComment={newComment}
-          onClose={() => setSelectedPost(null)}
-          onLikePost={handleLikePost}
-          onCreateComment={handleCreateComment}
-          onSetNewComment={setNewComment}
-          onReportContent={handleReportContent}
-        />
-      )}
-
-      {/* Community Rules - Disclaimer */}
-      <div className="mt-12 pt-6 border-t border-gray-200">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Regras da Comunidade</h4>
-          <ul className="text-xs text-gray-600 space-y-1">
-            {COMMUNITY_RULES.map((rule, index) => (
-              <li key={index} className="flex items-start space-x-2">
-                <span className="text-gray-400 mt-0.5">•</span>
-                <span>{rule}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </div>
@@ -484,7 +550,7 @@ function CreatePostModal({ onClose, onSubmit }: {
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
-      alert('Por favor, preencha título e conteúdo');
+      toast.error('Por favor, preencha título e conteúdo');
       return;
     }
 
@@ -499,7 +565,7 @@ function CreatePostModal({ onClose, onSubmit }: {
       });
     } catch (error) {
       console.error('Error submitting post:', error);
-      alert('Erro ao criar post. Tente novamente.');
+      toast.error('Erro ao criar post. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -514,14 +580,14 @@ function CreatePostModal({ onClose, onSubmit }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-dark-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl animate-slide-up">
+        <div className="p-6 border-b border-white/10 sticky top-0 bg-dark-900/95 backdrop-blur z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">Criar novo post</h2>
+            <h2 className="text-xl font-bold text-white">Criar novo post</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg"
             >
               <X className="h-6 w-6" />
             </button>
@@ -530,35 +596,35 @@ function CreatePostModal({ onClose, onSubmit }: {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               Título
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Dê um título para seu post..."
+              className="w-full px-4 py-3 bg-dark-850 border border-white/10 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
+              placeholder="Dê um título interessante..."
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               Conteúdo
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows={8}
+              className="w-full px-4 py-3 bg-dark-850 border border-white/10 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all resize-none"
               placeholder="Compartilhe sua experiência, dúvida ou reflexão..."
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               Tags (opcional)
             </label>
             <div className="flex flex-wrap gap-2">
@@ -567,9 +633,9 @@ function CreatePostModal({ onClose, onSubmit }: {
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedTags.includes(tag)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${selectedTags.includes(tag)
+                    ? 'bg-primary-500/20 text-primary-300 border-primary-500/50'
+                    : 'bg-dark-850 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white'
                     }`}
                 >
                   {tag}
@@ -578,18 +644,18 @@ function CreatePostModal({ onClose, onSubmit }: {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors font-medium"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-xl hover:from-primary-500 hover:to-accent-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary-500/20 font-medium"
             >
               {isSubmitting ? 'Publicando...' : 'Publicar'}
             </button>
@@ -620,14 +686,14 @@ function PostDetailModal({
   onReportContent: (type: 'post' | 'comment', id: string) => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-dark-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl animate-slide-up">
+        <div className="p-6 border-b border-white/10 sticky top-0 bg-dark-900/95 backdrop-blur z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">Discussão</h2>
+            <h2 className="text-xl font-bold text-white">Discussão</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg"
             >
               <X className="h-6 w-6" />
             </button>
@@ -636,46 +702,46 @@ function PostDetailModal({
 
         <div className="p-6">
           {/* Post Content */}
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-semibold">
+          <div className="mb-8 pb-8 border-b border-white/5">
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-full flex items-center justify-center border border-white/5">
+                <span className="text-zinc-300 font-bold text-lg">
                   {post.userName.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <div className="font-medium text-gray-900">{post.userName}</div>
-                <div className="text-sm text-gray-500">
+                <div className="font-bold text-white text-lg">{post.userName}</div>
+                <div className="text-sm text-zinc-500">
                   {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                 </div>
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
-            <p className="text-gray-700 whitespace-pre-wrap mb-4">{post.content}</p>
+            <h3 className="text-2xl font-bold text-white mb-4">{post.title}</h3>
+            <p className="text-zinc-300 whitespace-pre-wrap mb-6 leading-relaxed text-lg">{post.content}</p>
 
             {post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-6">
                 {post.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                  <span key={tag} className="px-3 py-1 bg-white/5 text-zinc-400 text-sm rounded-lg border border-white/5">
                     {tag}
                   </span>
                 ))}
               </div>
             )}
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <button
                 onClick={() => onLikePost(post.id)}
-                className={`flex items-center space-x-2 transition-colors ${post.isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                className={`flex items-center space-x-2 transition-colors ${post.isLiked ? 'text-red-500' : 'text-zinc-500 hover:text-red-500'
                   }`}
               >
-                <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
-                <span className="text-sm">{post.likes}</span>
+                <Heart className={`h-6 w-6 ${post.isLiked ? 'fill-current' : ''}`} />
+                <span className="text-base font-medium">{post.likes}</span>
               </button>
               <button
                 onClick={() => onReportContent('post', post.id)}
-                className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors"
+                className="flex items-center space-x-2 text-zinc-500 hover:text-red-400 transition-colors ml-auto"
               >
                 <Flag className="h-4 w-4" />
                 <span className="text-sm">Reportar</span>
@@ -684,34 +750,35 @@ function PostDetailModal({
           </div>
 
           {/* Comments */}
-          <div className="space-y-4 mb-6">
-            <h4 className="font-semibold text-gray-900">
-              Comentários ({comments.length})
+          <div className="space-y-6 mb-8">
+            <h4 className="font-bold text-white flex items-center space-x-2">
+              <MessageCircle className="h-5 w-5 text-primary-400" />
+              <span>Comentários ({comments.length})</span>
             </h4>
 
             {comments.map(comment => (
-              <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm font-semibold">
+              <div key={comment.id} className="bg-dark-850 rounded-xl p-5 border border-white/5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-dark-800 rounded-full flex items-center justify-center border border-white/5">
+                    <span className="text-zinc-400 text-xs font-bold">
                       {comment.userName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900 text-sm">{comment.userName}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="font-medium text-white text-sm">{comment.userName}</div>
+                    <div className="text-xs text-zinc-500">
                       {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-700 text-sm mb-2">{comment.content}</p>
-                <div className="flex items-center space-x-2">
-                  <button className="text-xs text-gray-500 hover:text-red-500 transition-colors">
+                <p className="text-zinc-300 text-sm mb-3 pl-11 leading-relaxed">{comment.content}</p>
+                <div className="flex items-center space-x-4 pl-11">
+                  <button className="text-xs text-zinc-500 hover:text-white transition-colors font-medium">
                     Curtir
                   </button>
                   <button
                     onClick={() => onReportContent('comment', comment.id)}
-                    className="text-xs text-gray-500 hover:text-red-500 transition-colors"
+                    className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
                   >
                     Reportar
                   </button>
@@ -720,28 +787,28 @@ function PostDetailModal({
             ))}
 
             {comments.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <MessageCircle className="h-8 w-8 mx-auto mb-2" />
-                <p>Seja o primeiro a comentar!</p>
+              <div className="text-center py-12 border border-white/5 rounded-xl bg-dark-850/30">
+                <MessageCircle className="h-10 w-10 mx-auto mb-3 text-zinc-600" />
+                <p className="text-zinc-400">Seja o primeiro a comentar!</p>
               </div>
             )}
           </div>
 
           {/* New Comment Input */}
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-4 bg-dark-850 p-4 rounded-xl border border-white/5 sticky bottom-0">
             <div className="flex-1">
               <textarea
                 value={newComment}
                 onChange={(e) => onSetNewComment(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={2}
+                className="w-full px-4 py-3 bg-dark-900 border border-white/10 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all resize-none"
                 placeholder="Escreva um comentário..."
               />
             </div>
             <button
               onClick={onCreateComment}
               disabled={!newComment.trim()}
-              className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="bg-primary-600 text-white p-3 rounded-xl hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary-500/20"
             >
               <Send className="h-5 w-5" />
             </button>

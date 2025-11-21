@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import ReactPlayer from 'react-player';
+
 import { useTrackerStore } from '../stores/trackerStore';
 import { useAuthStore } from '../stores/authStore';
-import { Brain, BookOpen, PenTool, Plus, CheckCircle, Play, Pause, RotateCcw, Calendar as CalendarIcon } from 'lucide-react';
+import { Brain, BookOpen, PenTool, Plus, CheckCircle, Play, Pause, RotateCcw, Calendar as CalendarIcon, Music, Upload, Volume2 } from 'lucide-react';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export default function Mente() {
   const { user } = useAuthStore();
@@ -19,13 +22,13 @@ export default function Mente() {
   const [timeLeft, setTimeLeft] = useState(10 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   // Background audio/video source (audio only)
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [mediaSrc, setMediaSrc] = useState<string | null>(null);
   const [isBlob, setIsBlob] = useState(false);
   const [sourceUrl, setSourceUrl] = useState('');
   const [volume, setVolume] = useState(0.6);
   const [loopAudio, setLoopAudio] = useState(false);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [showMediaControls, setShowMediaControls] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +36,7 @@ export default function Mente() {
     }
   }, [user, loadTrackers]);
 
+  // Timer logic
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (isTimerRunning && timeLeft > 0) {
@@ -42,44 +46,16 @@ export default function Mente() {
     } else if (timeLeft === 0) {
       setIsTimerRunning(false);
       handleSaveMeditation();
+      setIsPreviewPlaying(false); // Stop preview if timer ends
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, timeLeft]);
-
-  // Play/pause background media according to timer and preview
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.volume = volume;
-    video.loop = loopAudio;
-
-    if (isTimerRunning) {
-      // ensure playback starts from beginning for the session
-      try {
-        video.currentTime = 0;
-      } catch (e) {
-        // ignore
-      }
-      video.play().catch(() => {});
-      setIsPreviewPlaying(true);
-    } else {
-      if (!isPreviewPlaying) {
-        // only pause if not previewing
-        video.pause();
-      }
-    }
-
-    if (timeLeft === 0) {
-      video.pause();
-    }
-  }, [isTimerRunning, volume, loopAudio, timeLeft, isPreviewPlaying]);
 
   // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (isBlob && mediaSrc) {
-        try { URL.revokeObjectURL(mediaSrc); } catch (e) {}
+        try { URL.revokeObjectURL(mediaSrc); } catch (e) { }
       }
     };
   }, [isBlob, mediaSrc]);
@@ -143,50 +119,39 @@ export default function Mente() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (isBlob && mediaSrc) {
-      try { URL.revokeObjectURL(mediaSrc); } catch (e) {}
+      try { URL.revokeObjectURL(mediaSrc); } catch (e) { }
     }
     const url = URL.createObjectURL(file);
     setMediaSrc(url);
     setIsBlob(true);
     setSourceUrl('');
+    toast.success('Arquivo de áudio carregado com sucesso!');
   };
 
   const handleSetUrl = () => {
     if (!sourceUrl) return;
     if (isBlob && mediaSrc) {
-      try { URL.revokeObjectURL(mediaSrc); } catch (e) {}
+      try { URL.revokeObjectURL(mediaSrc); } catch (e) { }
     }
     setMediaSrc(sourceUrl);
     setIsBlob(false);
+    toast.success('URL de áudio definida com sucesso!');
   };
 
   const handleRemoveSource = () => {
     if (isBlob && mediaSrc) {
-      try { URL.revokeObjectURL(mediaSrc); } catch (e) {}
+      try { URL.revokeObjectURL(mediaSrc); } catch (e) { }
     }
     setMediaSrc(null);
     setIsBlob(false);
     setSourceUrl('');
     setIsPreviewPlaying(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.removeAttribute('src');
-      try { videoRef.current.load(); } catch (e) {}
-    }
+    toast.info('Áudio removido.');
   };
 
   const togglePreview = async () => {
-    const video = videoRef.current;
-    if (!video || !mediaSrc) return;
-    if (isPreviewPlaying) {
-      video.pause();
-      setIsPreviewPlaying(false);
-    } else {
-      try {
-        await video.play();
-        setIsPreviewPlaying(true);
-      } catch (e) {}
-    }
+    if (!mediaSrc) return;
+    setIsPreviewPlaying(!isPreviewPlaying);
   };
 
   // Weekly progress
@@ -215,8 +180,8 @@ export default function Mente() {
                 key={offset}
                 onClick={() => setSelectedDate(date)}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${isSelected
-                    ? 'bg-dark-700 text-white shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'bg-dark-700 text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
                   }`}
               >
                 {offset === 0 ? 'Hoje' : format(date, 'dd/MM')}
@@ -228,20 +193,122 @@ export default function Mente() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Meditation Section */}
-        <div className="bg-dark-850 rounded-2xl border border-white/10 overflow-hidden">
-          <div className="p-6 border-b border-white/10 flex justify-between items-center">
+        <div className="bg-dark-850 rounded-2xl border border-white/10 overflow-hidden relative">
+          <div className="p-6 border-b border-white/10 flex justify-between items-center z-10 relative">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Brain className="h-5 w-5 text-blue-400" />
               </div>
               <h2 className="font-semibold text-white">Meditação</h2>
             </div>
-            {meditationTracker?.value?.completed && (
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            )}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowMediaControls(!showMediaControls)}
+                className={`p-2 rounded-lg transition-colors ${showMediaControls ? 'bg-blue-500/20 text-blue-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                title="Configurar som de fundo"
+              >
+                <Music className="h-4 w-4" />
+              </button>
+              {meditationTracker?.value?.completed && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+            </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 relative z-10">
+            {showMediaControls && (
+              <div className="mb-6 p-4 bg-dark-900/50 rounded-xl border border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Som de Fundo</label>
+                  {mediaSrc && (
+                    <button
+                      onClick={handleRemoveSource}
+                      className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Remover áudio
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={sourceUrl}
+                        onChange={(e) => setSourceUrl(e.target.value)}
+                        placeholder="Cole a URL do áudio/vídeo (YouTube, MP4...)"
+                        className="w-full bg-dark-800 border border-white/10 rounded-lg pl-3 pr-20 py-2 text-sm text-white placeholder:text-zinc-600 focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
+                      />
+                      <button
+                        onClick={() => {
+                          if (mediaSrc && mediaSrc === sourceUrl) {
+                            handleRemoveSource();
+                          } else {
+                            handleSetUrl();
+                          }
+                        }}
+                        disabled={!sourceUrl && !mediaSrc}
+                        className={`absolute right-1 top-1 bottom-1 px-3 rounded-md text-xs font-medium transition-colors ${mediaSrc && mediaSrc === sourceUrl
+                          ? 'bg-red-600 hover:bg-red-500 text-white'
+                          : 'bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white'
+                          }`}
+                      >
+                        {mediaSrc && mediaSrc === sourceUrl ? 'Remover' : 'Usar'}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="video/*,audio/*"
+                        onChange={handleFileChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <button className="h-full px-3 bg-dark-800 border border-white/10 hover:bg-dark-700 text-zinc-400 hover:text-white rounded-lg transition-colors flex items-center justify-center" title="Carregar arquivo local">
+                        <Upload className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 flex items-center gap-3">
+                      <Volume2 className="h-4 w-4 text-zinc-500" />
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={volume}
+                        onChange={(e) => setVolume(Number(e.target.value))}
+                        className="flex-1 h-1 bg-dark-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer hover:text-zinc-300 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={loopAudio}
+                        onChange={(e) => setLoopAudio(e.target.checked)}
+                        className="rounded border-white/10 bg-dark-800 text-blue-500 focus:ring-blue-500/20"
+                      />
+                      <span>Loop</span>
+                    </label>
+
+                    <button
+                      onClick={togglePreview}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${isPreviewPlaying
+                        ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                        : 'bg-dark-800 text-zinc-400 hover:text-white hover:bg-dark-700'
+                        }`}
+                    >
+                      {isPreviewPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                      {isPreviewPlaying ? 'Parar' : 'Testar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {meditationTracker?.value?.completed ? (
               <div className="text-center py-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 mb-4">
@@ -260,8 +327,8 @@ export default function Mente() {
                   <button
                     onClick={toggleTimer}
                     className={`p-4 rounded-full transition-all ${isTimerRunning
-                        ? 'bg-dark-800 text-zinc-400 hover:bg-dark-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20'
+                      ? 'bg-dark-800 text-zinc-400 hover:bg-dark-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20'
                       }`}
                   >
                     {isTimerRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
@@ -285,94 +352,31 @@ export default function Mente() {
                         setIsTimerRunning(false);
                       }}
                       className={`px-3 py-1 rounded text-xs font-medium transition-all ${meditationTime === mins * 60
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'bg-dark-900 text-zinc-500 border border-white/5 hover:border-white/10'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'bg-dark-900 text-zinc-500 border border-white/5 hover:border-white/10'
                         }`}
                     >
                       {mins}min
                     </button>
                   ))}
                 </div>
-                <div className="mt-4 text-left space-y-3">
-                  <label className="block text-sm font-medium text-zinc-400">Som de Fundo (vídeo — só áudio)</label>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="file"
-                      accept="video/*,audio/*"
-                      onChange={handleFileChange}
-                      className="text-sm text-zinc-300 bg-dark-900 rounded px-2 py-1"
-                    />
-
-                    <button
-                      onClick={handleRemoveSource}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-sm"
-                    >
-                      Remover
-                    </button>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={sourceUrl}
-                      onChange={(e) => setSourceUrl(e.target.value)}
-                      placeholder="URL do vídeo/áudio"
-                      className="w-full bg-dark-900 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                    />
-                    <button
-                      onClick={handleSetUrl}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm"
-                    >
-                      Usar URL
-                    </button>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <label className="text-sm text-zinc-400">Volume</label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={volume}
-                      onChange={(e) => setVolume(Number(e.target.value))}
-                      className="w-32"
-                    />
-
-                    <label className="flex items-center text-sm text-zinc-400">
-                      <input
-                        type="checkbox"
-                        checked={loopAudio}
-                        onChange={(e) => setLoopAudio(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Loop
-                    </label>
-
-                    <button
-                      onClick={togglePreview}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm"
-                    >
-                      {isPreviewPlaying ? 'Parar' : 'Preview'}
-                    </button>
-                  </div>
-
-                  {mediaSrc && (
-                    <p className="text-xs text-zinc-500 truncate">Fonte: {mediaSrc}</p>
-                  )}
-                </div>
               </div>
             )}
           </div>
-          {/* Hidden video element used only for audio playback */}
-          <video
-            ref={(el) => (videoRef.current = el)}
-            src={mediaSrc || undefined}
-            style={{ display: 'none' }}
-            playsInline
-            preload="auto"
-          />
+          {/* ReactPlayer hidden */}
+          <div className="hidden">
+            {mediaSrc && (
+              <ReactPlayer
+                url={mediaSrc}
+                playing={isTimerRunning || isPreviewPlaying}
+                loop={loopAudio}
+                volume={volume}
+                width="0"
+                height="0"
+                style={{ display: 'none' }}
+              />
+            )}
+          </div>
         </div>
 
         {/* Reading Section */}
@@ -496,8 +500,8 @@ export default function Mente() {
                   {format(day, 'EEE', { locale: ptBR }).slice(0, 3)}
                 </span>
                 <div className={`w-full aspect-square rounded-lg flex items-center justify-center border transition-all ${dayMeditation?.value?.completed
-                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                    : 'bg-dark-900 border-white/5 text-zinc-700'
+                  ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                  : 'bg-dark-900 border-white/5 text-zinc-700'
                   }`}>
                   {dayMeditation?.value?.completed && <Brain className="h-4 w-4" />}
                 </div>
